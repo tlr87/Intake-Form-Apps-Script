@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #333333;
+        background-color: #f4f6f8;
+        margin: 0;
+        padding: 20px 0;
+      }
+      .email-card {
+        max-width: 600px;
+        margin: 0 auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 24px;
+        background-color: #ffffff;
+      }
+      .header-title {
+        color: #0f172a;
+        margin-top: 0;
+        font-size: 20px;
+        border-bottom: 2px solid #2563eb;
+        padding-bottom: 8px;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+      }
+      .table td {
+        padding: 10px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+      }
+      .label-col {
+        font-weight: bold;
+        width: 35%;
+        color: #475569;
+      }
+      .bg-alt {
+        background-color: #f8fafc;
+      }
+      .banner-spam {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+      .banner-review {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+      .footer {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 24px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-card" style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; background-color: #ffffff;">
+      
+      <!-- Conditional Flag Banners -->
+      <? if (isSpam) { ?>
+        <div class="banner-spam" style="background-color: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
+          🚫 SPAM NOTICE: Honeypot field was filled out on this submission.
+        </div>
+      <? } else if (requiresReview) { ?>
+        <div class="banner-review" style="background-color: #fff3cd; color: #856404; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
+          ⚠️ PLEASE REVIEW: Submission contains flagged keyword(s): <?= matchedTerms.join(", ") ?>
+        </div>
+      <? } ?>
+
+      <h2 class="header-title" style="color: #0f172a; margin-top: 0; font-size: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 8px;">New Contact Submission</h2>
+
+      <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+        <tr class="bg-alt" style="background-color: #f8fafc;">
+          <td class="label-col" style="padding: 10px; font-weight: bold; width: 35%; border-bottom: 1px solid #e2e8f0; color: #475569;">Name</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= name || "Not provided" ?></td>
+        </tr>
+        <tr>
+          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Email</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+            <? if (email) { ?>
+              <a href="mailto:<?= email ?>" style="color: #2563eb; text-decoration: none;"><?= email ?></a>
+            <? } else { ?>
+              Not provided
+            <? } ?>
+          </td>
+        </tr>
+        <tr class="bg-alt" style="background-color: #f8fafc;">
+          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Phone</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= phone || "Not provided" ?></td>
+        </tr>
+        <tr>
+          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Client Category</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= userType || "Not specified" ?></td>
+        </tr>
+        <tr class="bg-alt" style="background-color: #f8fafc;">
+          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Situation</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= situation || "Not specified" ?></td>
+        </tr>
+        <tr>
+          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Goal / Outcome</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= achievement || "Not specified" ?></td>
+        </tr>
+        <tr class="bg-alt" style="background-color: #f8fafc;">
+          <td class="label-col" style="padding: 10px; font-weight: bold; color: #475569;">Timeframe</td>
+          <td style="padding: 10px;"><?= timeframe || "Not specified" ?></td>
+        </tr>
+      </table>
+
+      <p class="footer" style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: right;">Submitted on <?= submitTime ?></p>
+    </div>
+  </body>
+</html>
