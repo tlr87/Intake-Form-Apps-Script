@@ -11,8 +11,8 @@ const CONFIG = {
   TIMEZONE: "Pacific/Auckland",
   HONEYPOT_FIELD: "website",
 
-  DEFAULT_TAXONOMY: {
-    spamKeywords: [
+    DEFAULT_TAXONOMY: {
+      spamKeywords: [
       "casino",
       "viagra",
       "loans",
@@ -21,6 +21,7 @@ const CONFIG = {
       "cheap credits"
     ],
     reviewKeywords: [
+      "tv",
       "TV",
       "Tuned",
       "Tv Tuned",
