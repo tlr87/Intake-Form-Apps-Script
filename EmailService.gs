@@ -269,22 +269,42 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Honeypot field filled ('" + hpField + "')");
   }
 
-  // 2. Review Keywords Evaluation
+  // 2. Review Keywords Evaluation (Fixed for short terms like "TV")
   var reviewKeywords = getFlaggedKeywords();
+  
+  // Always enforce "tv" in the keyword check list
+  if (reviewKeywords.indexOf("tv") === -1 && reviewKeywords.indexOf("TV") === -1) {
+    reviewKeywords.unshift("tv");
+  }
+
   var goalLower = goalText.toLowerCase();
   var goalMatches = [];
 
   if (goalLower.length > 0) {
     for (var g = 0; g < reviewKeywords.length; g++) {
-      var rawKw = reviewKeywords[g].toLowerCase().trim();
+      var rawKw = reviewKeywords[g].toString().toLowerCase().trim();
       if (!rawKw) continue;
 
-      var stemKw = rawKw.replace(/(ing|ers?|ed|es?)$/i, "");
+      var isMatched = false;
 
-      if (goalLower.indexOf(rawKw) !== -1 || (stemKw.length >= 3 && goalLower.indexOf(stemKw) !== -1)) {
+      // Handle short terms (e.g. "tv", "seo") with regex word boundaries
+      if (rawKw.length <= 3) {
+        var rx = new RegExp('(^|[^a-z0-9])' + rawKw + '($|[^a-z0-9])', 'i');
+        if (rx.test(goalLower)) {
+          isMatched = true;
+        }
+      } else {
+        var stemKw = rawKw.replace(/(ing|ers?|ed|es?)$/i, "");
+        if (goalLower.indexOf(rawKw) !== -1 || (stemKw.length >= 3 && goalLower.indexOf(stemKw) !== -1)) {
+          isMatched = true;
+        }
+      }
+
+      if (isMatched && goalMatches.indexOf(rawKw) === -1) {
         goalMatches.push(rawKw);
       }
     }
+
     if (goalMatches.length > 0) {
       isReviewRequired = true;
       flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
@@ -381,7 +401,7 @@ function categorizeLead(text) {
 function getFlaggedKeywords() {
   var keywords = (typeof CONFIG !== 'undefined' && Array.isArray(CONFIG.FLAGGED_KEYWORDS))
     ? CONFIG.FLAGGED_KEYWORDS.slice()
-    : ["crypto", "seo", "invest", "loans", "casino", "viagra", "guest post", "backlinks", "tv tune", "tv tuning", "tv tuned"];
+    : ["crypto", "seo", "invest", "loans", "casino", "viagra", "guest post", "backlinks", "tv tune", "tv tuning", "tv tuned", "tv"];
 
   try {
     var ss = getTargetSpreadsheetInstance();
@@ -598,10 +618,10 @@ function parseIncomingRequest(e) {
 function testClientEmailDirectly() {
   var testPayload = {
     "Name": "John Test",
-    "Email": "tom@rd3tech.com", // Replace with recipient email address to receive test
+    "Email": "tom@rd3tech.com",
     "Phone": "0211234567",
-    "Situation": "Need help with network setup",
-    "Message": "Testing client confirmation email sending."
+    "Situation": "Need help with TV setup",
+    "Message": "Need TV SEO done as soon as possible"
   };
   
   Logger.log("--- STARTING DIRECT TEST ---");

@@ -37,6 +37,17 @@
         border-radius: 0 0 8px 8px;
         padding: 30px;
       }
+      .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
+        margin: 20px 0 10px 0;
+      }
+      .section-label:first-of-type {
+        margin-top: 0;
+      }
       .nav-item {
         display: block;
         padding: 16px 20px;
@@ -52,15 +63,33 @@
       .nav-item:hover {
         background-color: #e2e8f0;
       }
+      .nav-item.accent-blue {
+        border-left-color: #0284c7;
+      }
       .nav-title {
         font-weight: 700;
         font-size: 16px;
         color: #993333;
         margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .accent-blue .nav-title {
+        color: #0284c7;
       }
       .nav-desc {
         font-size: 13px;
         color: #64748b;
+      }
+      .badge {
+        font-size: 11px;
+        font-family: monospace;
+        background-color: #cbd5e1;
+        color: #0f172a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: normal;
       }
     </style>
   </head>
@@ -73,6 +102,36 @@
         <p style="margin-top: 0; margin-bottom: 20px; font-size: 14px; color: #475569;">
           Select a preview page or management tool below:
         </p>
+
+        <div class="section-label">Hub &amp; Reference Materials</div>
+
+        <a class="nav-item accent-blue" href="rd3-snippets-reference.html">
+          <div class="nav-title">
+            <span>📚 RD3 Snippets Reference</span>
+            <span class="badge">Reference Guide</span>
+          </div>
+          <div class="nav-desc">Complete code documentation, shortcodes, and technical snippet library.</div>
+        </a>
+
+        <div class="section-label">Shortcode Lead Forms</div>
+
+        <a class="nav-item accent-blue" href="?page=ContactForm">
+          <div class="nav-title">
+            <span>📋 Contact Form Shortcode</span>
+            <span class="badge">[rd3_contact_form]</span>
+          </div>
+          <div class="nav-desc">Google Forms POST integration for general customer inquiries and service requests.</div>
+        </a>
+
+        <a class="nav-item accent-blue" href="?page=LeadForm">
+          <div class="nav-title">
+            <span>⚡ Lead Capture Form Shortcode</span>
+            <span class="badge">[rd3_lead_form]</span>
+          </div>
+          <div class="nav-desc">Google Apps Script Async API form for fast lead generation and automated routing.</div>
+        </a>
+
+        <div class="section-label">Email Templates</div>
 
         <a class="nav-item" href="?page=AdminTemplate">
           <div class="nav-title">🚀 Admin Notification Email (Default)</div>
@@ -93,6 +152,8 @@
           <div class="nav-title">✉️ Customer Confirmation Email</div>
           <div class="nav-desc">Auto-responder sent to the client upon form submission.</div>
         </a>
+
+        <div class="section-label">Management Tools</div>
 
         <a class="nav-item" href="?page=AdminUI">
           <div class="nav-title">⚙️ Keyword Taxonomy Editor</div>
