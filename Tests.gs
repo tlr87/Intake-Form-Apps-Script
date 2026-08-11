@@ -434,3 +434,154 @@ function testLatestSheetRow() {
     Logger.log("❌ Error: EmailService.processSubmission is not defined.");
   }
 }
+
+
+
+
+
+/**
+ * Test function to send AdminTemplate.html to tom.revill@gmail.com
+ * Run this directly from the Apps Script editor.
+ */
+function sendTestAdminEmail() {
+  var recipient = "tom.revill@gmail.com";
+  var subject = "TEST INQUIRY: Flag Reasons Formatting Check";
+
+  // Create template from AdminTemplate.html file
+  var htmlTemplate = HtmlService.createTemplateFromFile('AdminTemplate');
+
+  // Mock submission data
+  htmlTemplate.submission = {
+    name: "Tom Revill (Test Client)",
+    email: "tom.revill@gmail.com",
+    phone: "123-456-7890",
+    address: "Auckland, NZ",
+    userType: "Residential / Home User",
+    situation: "Computer running slow and needs urgent inspection.",
+    achievement: "Fix performance issues and review system security ASAP.",
+    timeframe: "as soon as possible, soon",
+    isReviewRequired: true,
+    isUrgent: true,
+    isSpam: false
+  };
+
+  // Mock evaluation result containing concatenated flag strings and duplicates
+  htmlTemplate.evalResult = {
+    flags: [
+      "Urgent timeframe detected: 'as soon as possible, soon'",
+      "Suspicious phone format",
+      "Suspicious phone format", // Intentional duplicate to test deduplication
+      "Goal / Desired Outcome matched review keyword(s): urgent",
+      "Flagged Review Keyword: urgent, review"
+    ],
+    isReviewRequired: true,
+    isUrgent: true
+  };
+
+  // Render HTML body
+  var htmlBody = htmlTemplate.evaluate().getContent();
+
+  // Send the email
+  GmailApp.sendEmail(recipient, subject, "Please enable HTML to view this email.", {
+    htmlBody: htmlBody,
+    name: "RD3 Tech System Test"
+  });
+
+  Logger.log("Test email successfully sent to " + recipient);
+}
+
+
+
+
+
+/**
+ * Test function to evaluate ClientTemplate.html and send a test email.
+ */
+function testClientTemplate() {
+  // 1. Destination email address for testing
+  var testRecipient = "tom.revill@gmail.com"; 
+
+  // 2. Mock submission data to test template variable extraction
+  var mockSubmission = {
+    name: "Alex Morgan",
+    email: "alex.morgan@example.com",
+    phone: "021 555 0199",
+    address: "123 Queen Street, Auckland",
+    userType: "Small Business / Commercial",
+    situation: "Our office network and primary server keep disconnecting periodically during peak work hours.",
+    achievement: "Upgrade network infrastructure, improve reliability, and establish backup redundancy.",
+    timeframe: "Within the next week"
+  };
+
+  try {
+    // 3. Create and populate the HTML template from ClientTemplate.html
+    var template = HtmlService.createTemplateFromFile('ClientTemplate');
+    
+    // Pass mock object so fallback script tags can extract properties
+    template.submission = mockSubmission;
+    
+    // Optionally pass individual properties directly to test direct variable bindings
+    template.name = mockSubmission.name;
+    template.email = mockSubmission.email;
+    template.phone = mockSubmission.phone;
+    template.address = mockSubmission.address;
+    template.userType = mockSubmission.userType;
+    template.situation = mockSubmission.situation;
+    template.achievement = mockSubmission.achievement;
+    template.timeframe = mockSubmission.timeframe;
+
+    // 4. Evaluate the template to produce final raw HTML content
+    var htmlOutput = template.evaluate().getContent();
+
+    // 5. Send test email using GmailApp
+    GmailApp.sendEmail(testRecipient, "Inquiry Received — RD3 Tech [TEST]", "Please view this email in an HTML-compatible client.", {
+      htmlBody: htmlOutput,
+      name: "RD3 Tech"
+    });
+
+    Logger.log("SUCCESS: ClientTemplate.html test email sent to " + testRecipient);
+
+  } catch (error) {
+    Logger.log("ERROR: Failed to evaluate or send ClientTemplate.html — " + error.toString());
+  }
+}
+
+
+
+
+/**
+ * Test.gs - Dedicated Trigger Test File
+ */
+
+// 1. Select this function when setting up your 'On form submit' Trigger
+function testTriggerLog(e) {
+  Logger.log("✅ TRIGGER SUCCESS | Time: " + new Date().toISOString() + " | Event Data: " + JSON.stringify(e));
+}
+
+// 2. Select and click "Run" on this function in the IDE to test without submitting a form
+function runManualTest() {
+  var mockEvent = {
+    authMode: "FULL",
+    namedValues: {
+      "Timestamp": [new Date().toLocaleString()],
+      "Name": ["Test User"],
+      "Email": ["test@example.com"],
+      "Phone": ["021 000 0000"],
+      "Situation": ["Trigger Test"],
+      "What Are You Trying To Achieve?": ["Verifying Logger.log output"]
+    },
+    values: [
+      new Date().toLocaleString(),
+      "Test User",
+      "test@example.com",
+      "021 000 0000",
+      "Trigger Test",
+      "Verifying Logger.log output"
+    ],
+    triggerUid: "mock-trigger-12345"
+  };
+
+  Logger.log("--- 🧪 STARTING MANUAL TEST ---");
+  testTriggerLog(mockEvent);
+  Logger.log("--- 🏁 MANUAL TEST COMPLETE ---");
+}

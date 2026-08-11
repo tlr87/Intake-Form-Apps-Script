@@ -15,38 +15,84 @@ var EmailService = {
 };
 
 function doPost(e) {
+  Logger.log("=== 🌐 WEBHOOK DOPOST TRIGGERED ===");
   try {
     var data = parseIncomingRequest(e);
+    Logger.log("📥 Parsed Webhook Data: " + JSON.stringify(data));
     var result = processSubmission(data);
     return ContentService.createTextOutput(JSON.stringify({ status: "success", id: result ? result.id : "N/A" }))
                           .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    Logger.log("doPost Error: " + err.toString());
+    Logger.log("❌ CRITICAL ERROR in doPost: " + err.toString());
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
                           .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 function onFormSubmit(e) {
+  Logger.log("=== 🚀 FORM SUBMISSION TRIGGERED ===");
   try {
     var data = {};
-    if (e && e.namedValues) {
+    if (e && e.namedValues && Object.keys(e.namedValues).length > 0) {
+      Logger.log("📥 Form Data Source: e.namedValues");
       data = e.namedValues;
     } else if (e && e.response) {
+      Logger.log("📥 Form Data Source: e.response");
       var itemResponses = e.response.getItemResponses();
       for (var i = 0; i < itemResponses.length; i++) {
         data[itemResponses[i].getItem().getTitle()] = itemResponses[i].getResponse();
       }
+    } else if (e && e.values && e.range) {
+      Logger.log("📥 Form Data Source: e.values (Spreadsheet row)");
+      var sheet = e.range.getSheet();
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      for (var h = 0; h < headers.length; h++) {
+        if (headers[h]) data[headers[h].toString().trim()] = e.values[h];
+      }
     } else if (e && e.parameter) {
+      Logger.log("📥 Form Data Source: e.parameter");
       data = e.parameter;
+    } else {
+      Logger.log("⚠️ Trigger event object missing or empty. Fetching latest row from Sheet as safety fallback...");
+      return processLatestSheetRow();
     }
+
+    Logger.log("📦 Parsed Raw Payload: " + JSON.stringify(data));
     return processSubmission(data);
   } catch (err) {
-    Logger.log("onFormSubmit Error: " + err.toString());
+    Logger.log("❌ CRITICAL ERROR in onFormSubmit: " + err.toString());
   }
 }
 
+function processLatestSheetRow() {
+  var ss = getTargetSpreadsheetInstance();
+  if (!ss) {
+    Logger.log("❌ Fallback Failed: Spreadsheet target unreachable.");
+    return;
+  }
+  var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) ? CONFIG.SHEET_NAME : "Form Responses 1";
+  var sheet = ss.getSheetByName(sheetName) || ss.getSheets()[0];
+  var lastRow = sheet.getLastRow();
+  
+  if (lastRow < 2) {
+    Logger.log("⚠️ Fallback Skipped: Sheet has no submission data rows.");
+    return;
+  }
+  
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var values = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  var payload = {};
+  for (var i = 0; i < headers.length; i++) {
+    payload[headers[i].toString().trim()] = values[i];
+  }
+  
+  Logger.log("📄 Extracted Fallback Payload from Row " + lastRow + ": " + JSON.stringify(payload));
+  return processSubmission(payload);
+}
+
 function processSubmission(rawData) {
+  Logger.log("=== ⚙️ PROCESSING SUBMISSION ===");
   if (!rawData) {
     Logger.log("⚠️ processSubmission called without rawData payload.");
     rawData = {};
@@ -54,7 +100,8 @@ function processSubmission(rawData) {
 
   var extractedMap = normalizeInputKeys(rawData);
   var evaluation = evaluateSubmission(rawData, extractedMap);
-  
+  Logger.log("🔍 Evaluation Result: " + JSON.stringify(evaluation));
+
   var tz = (typeof CONFIG !== 'undefined' && CONFIG.TIMEZONE) ? CONFIG.TIMEZONE : "Pacific/Auckland";
   var timestamp = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd HH:mm:ss");
 
@@ -72,15 +119,29 @@ function processSubmission(rawData) {
         return String(extractedMap[cleanK]).trim();
       }
     }
+    // Search by partial fuzzy match
+    for (var rawKey in rawData) {
+      if (!rawData.hasOwnProperty(rawKey)) continue;
+      var lowerKey = rawKey.toLowerCase();
+      for (var p = 0; p < keys.length; p++) {
+        var targetKey = keys[p].toLowerCase();
+        if (targetKey.length > 2 && lowerKey.indexOf(targetKey) !== -1) {
+          var val = rawData[rawKey];
+          if (val !== undefined && val !== null && String(val).trim() !== '') {
+            return Array.isArray(val) ? val.join(", ").trim() : String(val).trim();
+          }
+        }
+      }
+    }
     return defaultValue;
   }
 
-  var nameVal = getValue(['entry.1576532276', 'entry_1576532276', 'name', 'fullName', 'full_name', 'your_name'], "N/A");
-  var emailVal = getValue(['entry.817428911', 'entry_817428911', 'email', 'emailAddress', 'email_address'], "N/A");
-  var phoneVal = getValue(['entry.1285532466', 'entry_1285532466', 'phone', 'phoneNumber', 'contact_number', 'mobile'], "N/A");
-  var addressVal = getValue(['entry.1293794731', 'entry_1293794731', 'address', 'location'], "N/A");
-  var categoryVal = getValue(['entry.343301224', 'entry_343301224', 'userType', 'category'], evaluation.category || "General Inquiry");
-  var situationVal = getValue(['entry.650060968', 'entry_650060968', 'situation', 'subject'], "New Website Lead");
+  var nameVal = getValue(['entry.1576532276', 'entry_1576532276', 'name', 'fullName', 'full_name', 'your_name', 'Name'], "N/A");
+  var emailVal = getValue(['entry.817428911', 'entry_817428911', 'email', 'emailAddress', 'email_address', 'Email'], "N/A");
+  var phoneVal = getValue(['entry.1285532466', 'entry_1285532466', 'phone', 'phoneNumber', 'contact_number', 'mobile', 'Phone'], "N/A");
+  var addressVal = getValue(['entry.1293794731', 'entry_1293794731', 'address', 'location', 'Address'], "N/A");
+  var categoryVal = getValue(['entry.343301224', 'entry_343301224', 'userType', 'category', 'usertype'], evaluation.category || "General Inquiry");
+  var situationVal = getValue(['entry.650060968', 'entry_650060968', 'situation', 'subject', 'Situation'], "New Website Lead");
   
   var messageVal = getValue([
     'entry.483026621', 'entry_483026621', 
@@ -121,9 +182,17 @@ function processSubmission(rawData) {
     rawData: JSON.stringify(rawData)
   };
 
+  Logger.log("👤 Extracted Lead Profile:");
+  Logger.log("   - Name: " + submission.name);
+  Logger.log("   - Email: " + submission.email);
+  Logger.log("   - Phone: " + submission.phone);
+  Logger.log("   - Category: " + submission.category);
+  Logger.log("   - Status: " + submission.status);
+
   logToSheet(submission);
   sendEmails(submission, evaluation);
 
+  Logger.log("=== ✅ SUBMISSION PROCESSING COMPLETE ===");
   return submission;
 }
 
@@ -165,7 +234,6 @@ function evaluateSubmission(rawData, map) {
     return "";
   }
 
-  // Extract fields
   var goalText = extractValue([
     'entry.483026621', 'entry_483026621',
     'entry.1883892334', 'entry_1883892334', 
@@ -188,7 +256,7 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Honeypot field filled ('" + hpField + "')");
   }
 
-  // 2. Review Keywords & Stemming Evaluation
+  // 2. Review Keywords Evaluation
   var reviewKeywords = getFlaggedKeywords();
   var goalLower = goalText.toLowerCase();
   var goalMatches = [];
@@ -205,7 +273,7 @@ function evaluateSubmission(rawData, map) {
       }
     }
     if (goalMatches.length > 0) {
-      isReviewRequired = true; // Always sets Review Required
+      isReviewRequired = true;
       spamScore += goalMatches.length;
       flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
     }
@@ -243,7 +311,7 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Contains multiple URLs (" + linkCount + ")");
   }
 
-  // 5. Phone Validation (Flags repeat zeros like 0000000000000000)
+  // 5. Phone Validation
   var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || '').replace(/[^0-9]/g, '');
   if (phoneStr.length > 0) {
     if (/^0+$/.test(phoneStr) || /^(\d)\1+$/.test(phoneStr) || phoneStr === '123456789' || phoneStr === '0123456789' || phoneStr.length < 7) {
@@ -331,10 +399,13 @@ function logToSheet(submission) {
     lock.waitLock(10000);
 
     var ss = getTargetSpreadsheetInstance();
-    if (!ss) return;
+    if (!ss) {
+      Logger.log("❌ logToSheet Failed: Target spreadsheet instance not resolved.");
+      return;
+    }
 
-    var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) ? CONFIG.SHEET_NAME : "Form Responses";
-    var sheet = ss.getSheetByName(sheetName);
+    var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) ? CONFIG.SHEET_NAME : "Form Responses 1";
+    var sheet = ss.getSheetByName(sheetName) || ss.getSheets()[0];
 
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
@@ -364,8 +435,9 @@ function logToSheet(submission) {
 
     SpreadsheetApp.flush();
     lock.releaseLock();
+    Logger.log("📊 Successfully logged submission " + submission.id + " to tab '" + sheet.getName() + "'.");
   } catch (err) {
-    Logger.log("logToSheet Error: " + err.toString());
+    Logger.log("❌ logToSheet Error: " + err.toString());
   }
 }
 
@@ -423,17 +495,15 @@ function sendAdminNotification(submission, evalResult) {
 
     var htmlBody = template.evaluate().getContent();
 
-    MailApp.sendEmail({
-      to: adminEmail,
-      subject: adminSubject,
+    GmailApp.sendEmail(adminEmail, adminSubject, "Please enable HTML in your email client to view this message.", {
       htmlBody: htmlBody,
       name: senderName,
       replyTo: (submission.email && submission.email !== 'N/A' && submission.email.indexOf("@") !== -1) ? submission.email : undefined
     });
 
-    Logger.log("✅ Admin Email sent successfully to: " + adminEmail);
+    Logger.log("✅ Admin Notification sent successfully to: " + adminEmail);
   } catch (adminErr) {
-    Logger.log("Admin Email Error: " + adminErr.toString());
+    Logger.log("❌ Admin Email Error: " + adminErr.toString());
   }
 }
 
@@ -469,33 +539,46 @@ function sendClientConfirmation(submission) {
 
       var htmlBody = template.evaluate().getContent();
 
-      MailApp.sendEmail({
-        to: submission.email,
-        subject: clientSubject,
+      GmailApp.sendEmail(submission.email, clientSubject, "Please enable HTML in your email client to view this message.", {
         htmlBody: htmlBody,
         name: senderName
       });
 
       Logger.log("✅ Client Confirmation Email sent successfully to: " + submission.email);
     } catch (clientErr) {
-      Logger.log("Client Email Error: " + clientErr.toString());
+      Logger.log("❌ Client Email Error: " + clientErr.toString());
     }
+  } else {
+    Logger.log("⚠️ Skipped Client Email: Invalid recipient email ('" + submission.email + "') or flagged as spam.");
   }
 }
 
 function getTargetSpreadsheetInstance() {
+
   if (typeof getTargetSpreadsheet === 'function') {
+
     return getTargetSpreadsheet();
+
   }
+
   if (typeof CONFIG !== 'undefined' && CONFIG.SPREADSHEET_ID) {
+
     try {
+
       return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+
     } catch (e) {
+
       Logger.log("Failed opening spreadsheet by ID: " + e.toString());
+
     }
+
   }
+
   return SpreadsheetApp.getActiveSpreadsheet();
-}
+
+} 
+
 
 function parseIncomingRequest(e) {
   if (!e) return {};

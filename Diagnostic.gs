@@ -227,3 +227,25 @@ function testFetchLeadsForAdmin() {
 }
 
 
+
+
+function testFullEmailPipeline() {
+  // ⚠️ REPLACE THIS with your actual email address to test client delivery
+  var testRecipientEmail = "tom.revill@gmail.com"; 
+
+  var mockEvent = {
+    namedValues: {
+      "Timestamp": [new Date().toLocaleString()],
+      "Name": ["Test Lead"],
+      "Email": [testRecipientEmail],
+      "Phone": ["021 000 0000"],
+      "Situation": ["Live Pipeline Test"],
+      "What Are You Trying To Achieve?": ["Verifying email delivery pipeline"]
+    }
+  };
+
+  Logger.log("--- 🧪 TESTING FULL EMAIL PIPELINE ---");
+  onFormSubmit(mockEvent);
+  Logger.log("--- 🏁 PIPELINE TEST COMPLETE ---");
+}
+
