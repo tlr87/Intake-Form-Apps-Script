@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RD3 Tech Lead Engine - Operational Manual</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #222; max-width: 900px; margin: 30px auto; padding: 0 20px; }
+    h1 { border-bottom: 2px solid #0056b3; padding-bottom: 10px; color: #0056b3; }
+    h2 { color: #333; margin-top: 30px; }
+    code { background: #eef1f5; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 14px; }
+    pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 6px; overflow-x: auto; }
+    .box { background: #eef6ff; border-left: 4px solid #0056b3; padding: 15px; margin: 15px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #f4f6f8; }
+  </style>
+</head>
+<body>
+
+  <h1>RD3 Tech Lead Engine - Operations Manual</h1>
+  <p>This manual covers setup, architecture, and maintenance for the RD3 Tech lead processing system.</p>
+
+  <h2>1. System Architecture Overview</h2>
+  <table>
+    <tr><th>Component</th><th>File / Location</th><th>Role</th></tr>
+    <tr><td>Frontend Webserver</td><td><code>contact.php</code></td><td>Captures web form data, sanitizes fields, and posts JSON payload via cURL.</td></tr>
+    <tr><td>Script Backend</td><td><code>Main.gs</code> + modules</td><td>Processes anti-spam rules, tags keywords, updates Google Sheets, and sends emails.</td></tr>
+    <tr><td>Database</td><td>Google Sheet ("Leads")</td><td>Stores structured records of all leads, status flags, and timestamps.</td></tr>
+    <tr><td>Taxonomy Editor</td><td><code>AdminUI.html</code></td><td>Visual GUI accessed via <code>?page=admin</code> to modify repair keywords.</td></tr>
+  </table>
+
+  <h2>2. Installation & Deployment Steps</h2>
+  <ol>
+    <li>Open Google Sheets and click <strong>Extensions &gt; Apps Script</strong>.</li>
+    <li>Create all 7 <code>.gs</code> files and 3 <code>.html</code> files as defined in the project codebase.</li>
+    <li>Click <strong>Deploy &gt; New deployment</strong>.</li>
+    <li>Select type <strong>Web App</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>.</li>
+    <li>Copy the generated <strong>Web App URL</strong>.</li>
+    <li>Open <code>contact.php</code> on your web server and replace <code>$webAppUrl</code> with your URL.</li>
+  </ol>
+
+  <h2>3. Managing Keywords (Taxonomy)</h2>
+  <div class="box">
+    <strong>Admin Editor Access:</strong> Append <code>?page=admin</code> to your deployed Web App URL:
+    <br><code>https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec?page=admin</code>
+  </div>
+  <p>Use the visual tree editor to add or remove categories and keywords. Click <strong>Save Taxonomy</strong> when finished. Changes apply instantly without requiring re-deployment.</p>
+
+  <h2>4. Debugging and Testing</h2>
+  <p>To verify the pipeline directly within Apps Script:</p>
+  <ul>
+    <li>Select <code>Tests.gs</code> in the editor file menu.</li>
+    <li>Choose <code>testLeadPipeline</code> from the function dropdown and click <strong>Run</strong>.</li>
+    <li>Check the <strong>Execution log</strong> for confirmation output.</li>
+  </ul>
+
+</body>
+</html>

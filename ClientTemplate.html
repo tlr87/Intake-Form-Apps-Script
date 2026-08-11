@@ -15,7 +15,7 @@
       </h2>
 
       <p style="font-size: 15px; line-height: 1.6; color: #334155;">
-        Hi <?= name ?>,
+        Hi <?= name || "there" ?>,
       </p>
 
       <p style="font-size: 15px; line-height: 1.6; color: #334155;">
@@ -23,7 +23,7 @@
       </p>
 
       <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; font-style: italic; color: #475569;">
-        "<?= situation ?>"
+        "<?= situation || "Your service request" ?>"
       </div>
 
       <p style="font-size: 15px; line-height: 1.6; color: #334155;">

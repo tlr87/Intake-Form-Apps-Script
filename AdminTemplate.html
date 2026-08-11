@@ -71,13 +71,13 @@
     <div class="email-card" style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; background-color: #ffffff;">
       
       <!-- Conditional Flag Banners -->
-      <? if (isSpam) { ?>
+      <? if (typeof isSpam !== 'undefined' && isSpam) { ?>
         <div class="banner-spam" style="background-color: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
           🚫 SPAM NOTICE: Honeypot field was filled out on this submission.
         </div>
-      <? } else if (requiresReview) { ?>
+      <? } else if (typeof requiresReview !== 'undefined' && requiresReview) { ?>
         <div class="banner-review" style="background-color: #fff3cd; color: #856404; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
-          ⚠️ PLEASE REVIEW: Submission contains flagged keyword(s): <?= matchedTerms.join(", ") ?>
+          ⚠️ PLEASE REVIEW: Submission contains flagged keyword(s): <?= (typeof matchedTerms !== 'undefined' && Array.isArray(matchedTerms)) ? matchedTerms.join(", ") : matchedTerms ?>
         </div>
       <? } ?>
 
@@ -91,7 +91,7 @@
         <tr>
           <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Email</td>
           <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
-            <? if (email) { ?>
+            <? if (typeof email !== 'undefined' && email) { ?>
               <a href="mailto:<?= email ?>" style="color: #2563eb; text-decoration: none;"><?= email ?></a>
             <? } else { ?>
               Not provided
@@ -120,7 +120,7 @@
         </tr>
       </table>
 
-      <p class="footer" style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: right;">Submitted on <?= submitTime ?></p>
+      <p class="footer" style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: right;">Submitted on <?= submitTime || "N/A" ?></p>
     </div>
   </body>
 </html>
