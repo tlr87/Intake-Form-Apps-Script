@@ -7,6 +7,7 @@ var DEV_BASE_URL = "https://script.google.com/a/macros/rd3tech.com/s/AKfycbzpO2H
 
 // List of HTML template files in your Apps Script project
 var HTML_FILES = [
+  { name: "Index", description: "Default Management & Preview Hub Landing Page" },
   { name: "AdminUI", description: "Keyword Taxonomy JSON Editor" },
   { name: "ClientTemplate", description: "Customer Confirmation Email Template" },
   { name: "AdminTemplate", description: "Internal Admin Notification Email Template (Default / Green)" },
@@ -18,11 +19,12 @@ var HTML_FILES = [
 /**
  * Serves HTML templates in the browser via Web App /dev URL.
  * Accepts query parameters: 
- *   - ?page=AdminUI | AdminTemplate | ClientTemplate
+ *   - ?page=Index | AdminUI | AdminTemplate | ClientTemplate
  *   - ?mode=urgent | spam | review
  */
 function doGet(e) {
-  var templateName = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'AdminUI';
+  // Defaults to 'Index' when no ?page= parameter is provided
+  var templateName = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'Index';
   var mode = (e && e.parameter && e.parameter.mode) ? e.parameter.mode.toLowerCase() : '';
 
   try {
@@ -87,7 +89,8 @@ function updateHtmlTabLinks() {
     sheet.setFrozenRows(1);
 
     HTML_FILES.forEach(function(file) {
-      var fullDevUrl = DEV_BASE_URL + "?page=" + file.name;
+      // If the file is Index, construct the clean base URL; otherwise append ?page=
+      var fullDevUrl = (file.name === "Index") ? DEV_BASE_URL : DEV_BASE_URL + "?page=" + file.name;
       var hyperlinkFormula = '=HYPERLINK("' + fullDevUrl + '", "🔗 Open ' + file.name + '")';
 
       sheet.appendRow([

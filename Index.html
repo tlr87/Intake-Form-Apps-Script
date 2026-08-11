@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>RD3 Tech - Management Hub</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+        font-family: Arial, sans-serif;
+        color: #1e293b;
+      }
+      .container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+      .header {
+        background-color: #993333;
+        color: #ffffff;
+        padding: 24px 30px;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+      .card-grid {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 0 0 8px 8px;
+        padding: 30px;
+      }
+      .nav-item {
+        display: block;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #993333;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #1e293b;
+        transition: background-color 0.2s ease;
+      }
+      .nav-item:hover {
+        background-color: #e2e8f0;
+      }
+      .nav-title {
+        font-weight: 700;
+        font-size: 16px;
+        color: #993333;
+        margin-bottom: 4px;
+      }
+      .nav-desc {
+        font-size: 13px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>RD3 TECH — Management & Preview Hub</h1>
+      </div>
+      <div class="card-grid">
+        <p style="margin-top: 0; margin-bottom: 20px; font-size: 14px; color: #475569;">
+          Select a preview page or management tool below:
+        </p>
+
+        <a class="nav-item" href="?page=AdminTemplate">
+          <div class="nav-title">🚀 Admin Notification Email (Default)</div>
+          <div class="nav-desc">Standard inquiry alert sent to RD3 Tech admin team.</div>
+        </a>
+
+        <a class="nav-item" href="?page=AdminTemplate&mode=urgent">
+          <div class="nav-title">🔥 Admin Notification Email (Urgent Mode)</div>
+          <div class="nav-desc">High-priority inquiry with urgent flag badge.</div>
+        </a>
+
+        <a class="nav-item" href="?page=AdminTemplate&mode=review">
+          <div class="nav-title">⚠️ Admin Notification Email (Review Required)</div>
+          <div class="nav-desc">Inquiry containing keywords flagged for manual review.</div>
+        </a>
+
+        <a class="nav-item" href="?page=ClientTemplate">
+          <div class="nav-title">✉️ Customer Confirmation Email</div>
+          <div class="nav-desc">Auto-responder sent to the client upon form submission.</div>
+        </a>
+
+        <a class="nav-item" href="?page=AdminUI">
+          <div class="nav-title">⚙️ Keyword Taxonomy Editor</div>
+          <div class="nav-desc">JSON configuration interface for updating spam, urgent, and review rules.</div>
+        </a>
+      </div>
+    </div>
+  </body>
+</html>

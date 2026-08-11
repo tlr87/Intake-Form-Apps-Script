@@ -25,22 +25,57 @@ function doPost(e) {
   }
 }
 
-function doGet(e) {
-  // Route to Admin Dashboard & Moderation Console
-  if (e && e.parameter && e.parameter.page === 'admin') {
-    var template = HtmlService.createTemplateFromFile('AdminTemplate');
+/**
+ * Main HTTP POST Endpoint
+ * Receives external webhooks/form POSTs and triggers processing/emails.
+ */
+function doPost(e) {
+  try {
+    var data = {};
+
+    // 1. Parse JSON payload (sent via text/plain from WP)
+    if (e && e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (jsonErr) {
+        data = e.parameter || {};
+      }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
+
+    Logger.log("📥 Received POST Payload: " + JSON.stringify(data));
+
+    // 2. Pass payload directly to your submission processor
+    var result = {};
+    if (typeof processSubmission === 'function') {
+      result = processSubmission(data);
+    } else if (typeof evaluateSubmission === 'function') {
+      result = evaluateSubmission(data);
+    } else {
+      throw new Error("processSubmission function not found in script context.");
+    }
+
+    // 3. Return clean JSON output back to WordPress
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Payload processed and emails dispatched successfully.",
+        result: result
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log("❌ Error processing POST: " + err.toString());
     
-    // Attach lead history fetched dynamically from the Google Sheet
-    template.leads = fetchLeadsForAdmin();
-
-    return template.evaluate()
-      .setTitle('RD3 Tech — Lead Management & Admin Portal')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: "error",
+        message: err.toString()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
-
-  return ContentService.createTextOutput("RD3 Tech Engine Endpoint Active");
 }
-
 /* ============================================================================
  * ADMIN DATA FETCHING & MAPPING
  * ============================================================================ */
