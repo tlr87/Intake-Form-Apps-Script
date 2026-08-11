@@ -1,12 +1,7 @@
 /**
  * EmailService.gs - Lead Ingestion & Processing Engine for RD3 Tech
- * Reads CONFIG directly from Config.gs (Do not declare var CONFIG in this file)
  */
 
-/**
- * Global EmailService Namespace
- * Exposes methods expected by Triggers.gs and external webhooks
- */
 var EmailService = {
   doPost: doPost,
   onFormSubmit: onFormSubmit,
@@ -19,9 +14,6 @@ var EmailService = {
   evaluateSubmission: evaluateSubmission
 };
 
-/**
- * Handles Webhook / HTTP POST submissions
- */
 function doPost(e) {
   try {
     var data = parseIncomingRequest(e);
@@ -35,9 +27,6 @@ function doPost(e) {
   }
 }
 
-/**
- * Handles Google Form response triggers
- */
 function onFormSubmit(e) {
   try {
     var data = {};
@@ -57,9 +46,6 @@ function onFormSubmit(e) {
   }
 }
 
-/**
- * Main ingestion & pipeline processing function
- */
 function processSubmission(rawData) {
   if (!rawData) {
     Logger.log("⚠️ processSubmission called without rawData payload.");
@@ -69,20 +55,17 @@ function processSubmission(rawData) {
   var extractedMap = normalizeInputKeys(rawData);
   var evaluation = evaluateSubmission(rawData, extractedMap);
   
-  // Format timestamp using timezone from Config
   var tz = (typeof CONFIG !== 'undefined' && CONFIG.TIMEZONE) ? CONFIG.TIMEZONE : "Pacific/Auckland";
   var timestamp = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd HH:mm:ss");
 
-  // Helper to search rawData & extractedMap for any matching key variant
   function getValue(keys, defaultValue) {
-    // 1. Direct rawData lookup
     for (var i = 0; i < keys.length; i++) {
       var k = keys[i];
       if (rawData && rawData[k] !== undefined && rawData[k] !== null && String(rawData[k]).trim() !== '') {
-        return String(rawData[k]).trim();
+        var v = rawData[k];
+        return Array.isArray(v) ? v.join(", ").trim() : String(v).trim();
       }
     }
-    // 2. Normalized map lookup
     for (var j = 0; j < keys.length; j++) {
       var cleanK = keys[j].toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
       if (extractedMap && extractedMap[cleanK] !== undefined && extractedMap[cleanK] !== null && String(extractedMap[cleanK]).trim() !== '') {
@@ -92,30 +75,28 @@ function processSubmission(rawData) {
     return defaultValue;
   }
 
-  var nameVal = getValue(['name', 'fullName', 'full_name', 'your_name', 'first_name'], "N/A");
-  var emailVal = getValue(['email', 'emailAddress', 'email_address', 'your_email'], "N/A");
-  var phoneVal = getValue(['phone', 'phoneNumber', 'contact_number', 'mobile', 'telephone'], "N/A");
-  var addressVal = getValue(['address', 'location'], "N/A");
+  var nameVal = getValue(['entry.1576532276', 'entry_1576532276', 'name', 'fullName', 'full_name', 'your_name'], "N/A");
+  var emailVal = getValue(['entry.817428911', 'entry_817428911', 'email', 'emailAddress', 'email_address'], "N/A");
+  var phoneVal = getValue(['entry.1285532466', 'entry_1285532466', 'phone', 'phoneNumber', 'contact_number', 'mobile'], "N/A");
+  var addressVal = getValue(['entry.1293794731', 'entry_1293794731', 'address', 'location'], "N/A");
+  var categoryVal = getValue(['entry.343301224', 'entry_343301224', 'userType', 'category'], evaluation.category || "General Inquiry");
+  var situationVal = getValue(['entry.650060968', 'entry_650060968', 'situation', 'subject'], "New Website Lead");
   
-  var categoryVal = getValue(
-    ['userType', 'category', 'user_type', 'usertype', 'i_am_contacting_rd3_tech_as', 'I am contacting RD3 Tech as:'], 
-    evaluation.category || "General Inquiry"
-  );
+  // entry.483026621 = Goal / Desired Outcome / Service details
+  var messageVal = getValue([
+    'entry.483026621', 'entry_483026621', 
+    'entry.1883892334', 'entry_1883892334', 
+    'what_are_you_trying_to_achieve', 'What Are You Trying To Achieve?', 
+    'achievement', 'message', 'goal', 'details', 'desired_outcome'
+  ], "");
   
-  var situationVal = getValue(
-    ['situation', 'subject', 'what_sounds_like_your_situation', 'What sounds like your situation?', 'problem', 'service'], 
-    "New Website Lead"
-  );
-  
-  var messageVal = getValue(
-    ['achievement', 'message', 'goal', 'details', 'what_are_you_trying_to_achieve', 'What Are You Trying To Achieve?', 'comments', 'desired_outcome'], 
-    ""
-  );
-  
-  var timeframeVal = getValue(
-    ['timeframe', 'urgency', 'how_soon_do_you_need_help', 'How Soon Do You Need Help?', 'timeline'], 
-    "N/A"
-  );
+  // entry.1883892334 = Timeframe / Urgency
+  var timeframeVal = getValue([
+    'entry.1883892334', 'entry_1883892334', 
+    'entry.483026621', 'entry_483026621', 
+    'how_soon_do_you_need_help', 'How Soon Do You Need Help?', 
+    'timeframe', 'urgency', 'timeline'
+  ], "N/A");
 
   var submission = {
     id: "LEAD-" + Date.now(),
@@ -135,7 +116,7 @@ function processSubmission(rawData) {
     isReviewRequired: evaluation.isReviewRequired || false,
     isUrgent: evaluation.isUrgent || false,
     spamScore: evaluation.spamScore || 0,
-    flagReasons: (evaluation.flagReasons && evaluation.flagReasons.length) ? evaluation.flagReasons.join(", ") : "",
+    flagReasons: (evaluation.flagReasons && evaluation.flagReasons.length) ? evaluation.flagReasons.join(" | ") : "",
     reasons: evaluation.flagReasons || [],
     flags: evaluation.flagReasons || [],
     status: evaluation.statusLabel || "NEW INQUIRY",
@@ -148,9 +129,6 @@ function processSubmission(rawData) {
   return submission;
 }
 
-/**
- * Normalizes parameter keys (lowercase, strips special chars)
- */
 function normalizeInputKeys(rawData) {
   var map = {};
   if (!rawData) return map;
@@ -165,9 +143,6 @@ function normalizeInputKeys(rawData) {
   return map;
 }
 
-/**
- * Evaluates spam rules, honeypot, keywords, and taxonomy categories
- */
 function evaluateSubmission(rawData, map) {
   var flagReasons = [];
   var spamScore = 0;
@@ -175,7 +150,39 @@ function evaluateSubmission(rawData, map) {
   var isReviewRequired = false;
   var isUrgent = false;
 
-  // 1. Honeypot Field Check from Config
+  function extractValue(keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (rawData && rawData[k] !== undefined && rawData[k] !== null && String(rawData[k]).trim() !== '') {
+        var v = rawData[k];
+        return Array.isArray(v) ? v.join(" ").trim() : String(v).trim();
+      }
+    }
+    for (var j = 0; j < keys.length; j++) {
+      var cleanK = keys[j].toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+      if (map && map[cleanK] !== undefined && map[cleanK] !== null && String(map[cleanK]).trim() !== '') {
+        return String(map[cleanK]).trim();
+      }
+    }
+    return "";
+  }
+
+  // Dual mapping: checks both parameter arrangements
+  var goalText = extractValue([
+    'entry.483026621', 'entry_483026621',
+    'entry.1883892334', 'entry_1883892334', 
+    'what_are_you_trying_to_achieve', 'What Are You Trying To Achieve?', 
+    'achievement', 'message', 'goal', 'details', 'desired_outcome'
+  ]);
+
+  var timeframeText = extractValue([
+    'entry.1883892334', 'entry_1883892334',
+    'entry.483026621', 'entry_483026621', 
+    'how_soon_do_you_need_help', 'How Soon Do You Need Help?', 
+    'timeframe', 'urgency', 'timeline'
+  ]);
+
+  // 1. Honeypot Check
   var hpField = (typeof CONFIG !== 'undefined' && CONFIG.HONEYPOT_FIELD) ? CONFIG.HONEYPOT_FIELD.toLowerCase() : "website";
   if ((map[hpField] && map[hpField] !== "") || map['honeypot'] || map['website_url_hp']) {
     isSpam = true;
@@ -183,29 +190,54 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Honeypot field filled ('" + hpField + "')");
   }
 
-  // Combine submission text for term scanning
-  var textParts = [];
+  // 2. Keyword Moderation & Stemming
+  var reviewKeywords = getFlaggedKeywords();
+  var goalLower = goalText.toLowerCase();
+  var goalMatches = [];
+
+  if (goalLower.length > 0) {
+    for (var g = 0; g < reviewKeywords.length; g++) {
+      var rawKw = reviewKeywords[g].toLowerCase().trim();
+      if (!rawKw) continue;
+
+      // Stemming logic: removes suffixes (e.g. "tune", "tuning", "tuned")
+      var stemKw = rawKw.replace(/(ing|ers?|ed|es?)$/i, "");
+
+      if (goalLower.indexOf(rawKw) !== -1 || (stemKw.length >= 3 && goalLower.indexOf(stemKw) !== -1)) {
+        goalMatches.push(rawKw);
+      }
+    }
+    if (goalMatches.length > 0) {
+      isReviewRequired = true;
+      spamScore += goalMatches.length;
+      flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
+    }
+  }
+
+  // 3. Timeframe Urgency Check
+  var urgentKeywords = ['asap', 'as soon as possible', 'urgent', 'urgently', 'immediately', 'critical', 'emergency', 'right away', 'today', '24 hours', 'soon'];
+  var timeframeLower = timeframeText.toLowerCase();
+  var matchedUrgent = [];
+
+  for (var u = 0; u < urgentKeywords.length; u++) {
+    var uk = urgentKeywords[u];
+    if (timeframeLower.indexOf(uk) !== -1) {
+      matchedUrgent.push(uk);
+    }
+  }
+
+  if (matchedUrgent.length > 0) {
+    isUrgent = true;
+    flagReasons.push("Urgent timeframe detected: '" + matchedUrgent.join(", ") + "'");
+  }
+
+  // 4. Multiple URLs Check
+  var textParts = [goalText, timeframeText];
   for (var k in map) {
     if (map[k] && typeof map[k] === 'string') textParts.push(map[k]);
   }
   var combinedText = textParts.join(" ").toLowerCase();
 
-  // 2. Keyword Moderation
-  var keywords = getFlaggedKeywords();
-  var matchedKeywords = [];
-  for (var i = 0; i < keywords.length; i++) {
-    var kw = keywords[i].toLowerCase().trim();
-    if (kw.length > 0 && combinedText.indexOf(kw) !== -1) {
-      matchedKeywords.push(kw);
-      spamScore += 1;
-    }
-  }
-  if (matchedKeywords.length > 0) {
-    isReviewRequired = true;
-    flagReasons.push("Matched keywords: " + matchedKeywords.join(", "));
-  }
-
-  // 3. Link Count Check (>1 link raises suspicion)
   var urlMatch = combinedText.match(/https?:\/\/[^\s]+|www\.[^\s]+/g);
   var linkCount = urlMatch ? urlMatch.length : 0;
   if (linkCount > 1) {
@@ -214,8 +246,8 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Contains multiple URLs (" + linkCount + ")");
   }
 
-  // 4. Phone Pattern Validation
-  var phoneStr = String(map['phone'] || map['mobile'] || map['contact_number'] || '').replace(/[^0-9]/g, '');
+  // 5. Phone Validation (Flags 16 zeros like 0000000000000000)
+  var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || '').replace(/[^0-9]/g, '');
   if (phoneStr.length > 0) {
     if (/^0+$/.test(phoneStr) || /^(\d)\1+$/.test(phoneStr) || phoneStr === '123456789' || phoneStr === '0123456789' || phoneStr.length < 7) {
       spamScore += 2;
@@ -224,12 +256,7 @@ function evaluateSubmission(rawData, map) {
     }
   }
 
-  // 5. Urgency Check
-  if (combinedText.indexOf('asap') !== -1 || combinedText.indexOf('urgent') !== -1 || combinedText.indexOf('immediately') !== -1) {
-    isUrgent = true;
-  }
-
-  // 6. Spam Threshold Check against Config
+  // 6. Threshold Check
   var threshold = (typeof CONFIG !== 'undefined' && CONFIG.SPAM_THRESHOLD) ? CONFIG.SPAM_THRESHOLD : 3;
   if (spamScore >= threshold) {
     isSpam = true;
@@ -256,9 +283,6 @@ function evaluateSubmission(rawData, map) {
   };
 }
 
-/**
- * Matches submission text against CONFIG.DEFAULT_TAXONOMY categories
- */
 function categorizeLead(text) {
   if (typeof CONFIG === 'undefined' || !CONFIG.DEFAULT_TAXONOMY || !CONFIG.DEFAULT_TAXONOMY.categories) {
     return "General Inquiry";
@@ -275,17 +299,13 @@ function categorizeLead(text) {
       }
     }
   }
-
   return "General Inquiry";
 }
 
-/**
- * Merges CONFIG.FLAGGED_KEYWORDS with keywords from the 'Flagged' sheet tab
- */
 function getFlaggedKeywords() {
-  var keywords = (typeof CONFIG !== 'undefined' && Array.isArray(CONFIG.FLAGGED_KEYWORDS)) 
-    ? CONFIG.FLAGGED_KEYWORDS.slice() 
-    : ["crypto", "seo", "invest", "loans", "casino", "viagra", "guest post", "backlinks"];
+  var keywords = (typeof CONFIG !== 'undefined' && Array.isArray(CONFIG.FLAGGED_KEYWORDS))
+    ? CONFIG.FLAGGED_KEYWORDS.slice()
+    : ["crypto", "seo", "invest", "loans", "casino", "viagra", "guest post", "backlinks", "tv tune", "tv tuning", "tv tuned"];
 
   try {
     var ss = getTargetSpreadsheetInstance();
@@ -307,9 +327,6 @@ function getFlaggedKeywords() {
   return keywords;
 }
 
-/**
- * Logs data safely with LockService to avoid concurrent row conflicts
- */
 function logToSheet(submission) {
   submission = submission || {};
   var lock = LockService.getScriptLock();
@@ -317,10 +334,7 @@ function logToSheet(submission) {
     lock.waitLock(10000);
 
     var ss = getTargetSpreadsheetInstance();
-    if (!ss) {
-      Logger.log("Could not open spreadsheet in logToSheet.");
-      return;
-    }
+    if (!ss) return;
 
     var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) ? CONFIG.SHEET_NAME : "Form Responses";
     var sheet = ss.getSheetByName(sheetName);
@@ -328,7 +342,7 @@ function logToSheet(submission) {
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
       sheet.appendRow([
-        "Lead ID", "Timestamp", "Status", "Name", "Email", "Phone", 
+        "Lead ID", "Timestamp", "Status", "Name", "Email", "Phone",
         "Category", "Subject / Situation", "Message / Goal", "Timeframe",
         "Is Spam", "Review Required", "Spam Score", "Flag Reasons"
       ]);
@@ -352,24 +366,17 @@ function logToSheet(submission) {
     ]);
 
     SpreadsheetApp.flush();
+    lock.releaseLock();
   } catch (err) {
     Logger.log("logToSheet Error: " + err.toString());
-  } finally {
-    lock.releaseLock();
   }
 }
 
-/**
- * Dispatches both Admin and Client HTML emails via templates
- */
 function sendEmails(submission, evalResult) {
   sendAdminNotification(submission, evalResult);
   sendClientConfirmation(submission);
 }
 
-/**
- * Sends Admin Alert Email rendering AdminTemplate.html
- */
 function sendAdminNotification(submission, evalResult) {
   submission = submission || {};
 
@@ -381,9 +388,9 @@ function sendAdminNotification(submission, evalResult) {
   var upperCategory = categoryText.toUpperCase();
 
   var flags = [];
-  if (submission.isReviewRequired || (evalResult && evalResult.requiresReview)) flags.push("REVIEW REQUIRED");
-  if (submission.isSpam || (evalResult && evalResult.isSpam))                   flags.push("SPAM DETECTED");
-  if (submission.isUrgent || (evalResult && evalResult.isUrgent))               flags.push("URGENT INQUIRY");
+  if (submission.isReviewRequired || (evalResult && evalResult.isReviewRequired)) flags.push("REVIEW REQUIRED");
+  if (submission.isSpam || (evalResult && evalResult.isSpam))                     flags.push("SPAM DETECTED");
+  if (submission.isUrgent || (evalResult && evalResult.isUrgent))                 flags.push("URGENT INQUIRY");
 
   var subjectPrefix = flags.length > 0 ? "⚠️ [" + flags.join(", ") + "] " : "🚀 [NEW LEAD - " + upperCategory + "] ";
   var leadName = submission.name || "N/A";
@@ -392,12 +399,10 @@ function sendAdminNotification(submission, evalResult) {
   try {
     var template = HtmlService.createTemplateFromFile("AdminTemplate");
 
-    // Standard container object
     template.submission = submission;
     template.companyName = companyName;
     template.senderName = senderName;
 
-    // Top-level property bindings to prevent ReferenceErrors in template evaluation
     template.category = categoryText;
     template.userType = categoryText;
     template.name = submission.name || "N/A";
@@ -435,9 +440,6 @@ function sendAdminNotification(submission, evalResult) {
   }
 }
 
-/**
- * Sends Client Confirmation Email rendering ClientTemplate.html
- */
 function sendClientConfirmation(submission) {
   submission = submission || {};
 
@@ -452,12 +454,10 @@ function sendClientConfirmation(submission) {
 
       var template = HtmlService.createTemplateFromFile("ClientTemplate");
 
-      // Standard container object
       template.submission = submission;
       template.companyName = companyName;
       template.senderName = senderName;
 
-      // Top-level property bindings to prevent ReferenceErrors in template evaluation
       template.category = categoryText;
       template.userType = categoryText;
       template.name = submission.name || "N/A";
@@ -486,9 +486,6 @@ function sendClientConfirmation(submission) {
   }
 }
 
-/**
- * Helper to safely get Spreadsheet instance using Config fallback
- */
 function getTargetSpreadsheetInstance() {
   if (typeof getTargetSpreadsheet === 'function') {
     return getTargetSpreadsheet();
@@ -503,9 +500,6 @@ function getTargetSpreadsheetInstance() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
-/**
- * Parses JSON post data or form parameters
- */
 function parseIncomingRequest(e) {
   if (!e) return {};
   if (e.postData && e.postData.contents) {

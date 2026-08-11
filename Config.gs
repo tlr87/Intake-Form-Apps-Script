@@ -21,6 +21,9 @@ const CONFIG = {
       "cheap credits"
     ],
     reviewKeywords: [
+      "TV",
+      "Tuned",
+      "Tv Tuned",
       "crypto",
       "seo",
       "guest post",
