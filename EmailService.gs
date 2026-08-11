@@ -82,7 +82,6 @@ function processSubmission(rawData) {
   var categoryVal = getValue(['entry.343301224', 'entry_343301224', 'userType', 'category'], evaluation.category || "General Inquiry");
   var situationVal = getValue(['entry.650060968', 'entry_650060968', 'situation', 'subject'], "New Website Lead");
   
-  // entry.483026621 = Goal / Desired Outcome / Service details
   var messageVal = getValue([
     'entry.483026621', 'entry_483026621', 
     'entry.1883892334', 'entry_1883892334', 
@@ -90,7 +89,6 @@ function processSubmission(rawData) {
     'achievement', 'message', 'goal', 'details', 'desired_outcome'
   ], "");
   
-  // entry.1883892334 = Timeframe / Urgency
   var timeframeVal = getValue([
     'entry.1883892334', 'entry_1883892334', 
     'entry.483026621', 'entry_483026621', 
@@ -167,7 +165,7 @@ function evaluateSubmission(rawData, map) {
     return "";
   }
 
-  // Dual mapping: checks both parameter arrangements
+  // Extract fields
   var goalText = extractValue([
     'entry.483026621', 'entry_483026621',
     'entry.1883892334', 'entry_1883892334', 
@@ -190,7 +188,7 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Honeypot field filled ('" + hpField + "')");
   }
 
-  // 2. Keyword Moderation & Stemming
+  // 2. Review Keywords & Stemming Evaluation
   var reviewKeywords = getFlaggedKeywords();
   var goalLower = goalText.toLowerCase();
   var goalMatches = [];
@@ -200,7 +198,6 @@ function evaluateSubmission(rawData, map) {
       var rawKw = reviewKeywords[g].toLowerCase().trim();
       if (!rawKw) continue;
 
-      // Stemming logic: removes suffixes (e.g. "tune", "tuning", "tuned")
       var stemKw = rawKw.replace(/(ing|ers?|ed|es?)$/i, "");
 
       if (goalLower.indexOf(rawKw) !== -1 || (stemKw.length >= 3 && goalLower.indexOf(stemKw) !== -1)) {
@@ -208,7 +205,7 @@ function evaluateSubmission(rawData, map) {
       }
     }
     if (goalMatches.length > 0) {
-      isReviewRequired = true;
+      isReviewRequired = true; // Always sets Review Required
       spamScore += goalMatches.length;
       flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
     }
@@ -246,7 +243,7 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Contains multiple URLs (" + linkCount + ")");
   }
 
-  // 5. Phone Validation (Flags 16 zeros like 0000000000000000)
+  // 5. Phone Validation (Flags repeat zeros like 0000000000000000)
   var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || '').replace(/[^0-9]/g, '');
   if (phoneStr.length > 0) {
     if (/^0+$/.test(phoneStr) || /^(\d)\1+$/.test(phoneStr) || phoneStr === '123456789' || phoneStr === '0123456789' || phoneStr.length < 7) {
@@ -256,18 +253,18 @@ function evaluateSubmission(rawData, map) {
     }
   }
 
-  // 6. Threshold Check
+  // 6. Threshold & Status Label Assembly
   var threshold = (typeof CONFIG !== 'undefined' && CONFIG.SPAM_THRESHOLD) ? CONFIG.SPAM_THRESHOLD : 3;
   if (spamScore >= threshold) {
     isSpam = true;
-  } else if (spamScore > 0 || linkCount > 0) {
-    isReviewRequired = true;
   }
 
-  var statusLabel = "NEW INQUIRY";
-  if (isSpam) statusLabel = "SPAM DETECTED";
-  else if (isReviewRequired) statusLabel = "REVIEW REQUIRED";
+  var statusParts = [];
+  if (isReviewRequired) statusParts.push("REVIEW REQUIRED");
+  if (isSpam) statusParts.push("SPAM DETECTED");
+  if (isUrgent) statusParts.push("URGENT");
 
+  var statusLabel = statusParts.length > 0 ? statusParts.join(" | ") : "NEW INQUIRY";
   var category = categorizeLead(combinedText);
 
   return {
@@ -389,10 +386,10 @@ function sendAdminNotification(submission, evalResult) {
 
   var flags = [];
   if (submission.isReviewRequired || (evalResult && evalResult.isReviewRequired)) flags.push("REVIEW REQUIRED");
-  if (submission.isSpam || (evalResult && evalResult.isSpam))                     flags.push("SPAM DETECTED");
   if (submission.isUrgent || (evalResult && evalResult.isUrgent))                 flags.push("URGENT INQUIRY");
+  if (submission.isSpam || (evalResult && evalResult.isSpam))                     flags.push("SPAM DETECTED");
 
-  var subjectPrefix = flags.length > 0 ? "⚠️ [" + flags.join(", ") + "] " : "🚀 [NEW LEAD - " + upperCategory + "] ";
+  var subjectPrefix = flags.length > 0 ? "⚠️ [" + flags.join(" | ") + "] " : "🚀 [NEW LEAD - " + upperCategory + "] ";
   var leadName = submission.name || "N/A";
   var adminSubject = subjectPrefix + (submission.subject || submission.situation || categoryText) + " - " + leadName;
 

@@ -25,27 +25,40 @@
                       <div style="margin-top: 8px;">
                         
                         <!-- 1. REVIEW REQUIRED BADGE -->
-                        <? if ((typeof requiresReview !== 'undefined' && requiresReview) || (typeof isReview !== 'undefined' && isReview) || (typeof evalResult !== 'undefined' && evalResult && evalResult.requiresReview)) { ?>
+                        <? 
+                          var reviewFlag = (typeof isReviewRequired !== 'undefined' && isReviewRequired) || 
+                                           (typeof requiresReview !== 'undefined' && requiresReview) || 
+                                           (typeof isReview !== 'undefined' && isReview) || 
+                                           (typeof submission !== 'undefined' && submission && (submission.isReviewRequired || submission.requiresReview)) ||
+                                           (typeof evalResult !== 'undefined' && evalResult && (evalResult.isReviewRequired || evalResult.requiresReview));
+                          if (reviewFlag) { 
+                        ?>
                           <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚩 REVIEW REQUIRED</span>
                         <? } ?>
 
                         <!-- 2. SPAM DETECTED BADGE -->
-                        <? if ((typeof isSpam !== 'undefined' && isSpam) || (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam)) { ?>
+                        <? 
+                          var spamFlag = (typeof isSpam !== 'undefined' && isSpam) || 
+                                         (typeof submission !== 'undefined' && submission && submission.isSpam) ||
+                                         (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam);
+                          if (spamFlag) { 
+                        ?>
                           <span style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">⛔ SPAM DETECTED</span>
                         <? } ?>
 
                         <!-- 3. URGENT INQUIRY BADGE -->
-                        <? if ((typeof isUrgent !== 'undefined' && isUrgent) || (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent)) { ?>
+                        <? 
+                          var urgentFlag = (typeof isUrgent !== 'undefined' && isUrgent) || 
+                                           (typeof submission !== 'undefined' && submission && submission.isUrgent) ||
+                                           (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent);
+                          if (urgentFlag) { 
+                        ?>
                           <span style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚨 URGENT INQUIRY</span>
                         <? } ?>
 
                         <!-- 4. DEFAULT NEW INQUIRY BADGE -->
                         <? 
-                          var hasFlag = (typeof isSpam !== 'undefined' && isSpam) || 
-                                        (typeof isUrgent !== 'undefined' && isUrgent) || 
-                                        (typeof requiresReview !== 'undefined' && requiresReview) || 
-                                        (typeof evalResult !== 'undefined' && evalResult && (evalResult.isSpam || evalResult.isUrgent || evalResult.requiresReview));
-                          if (!hasFlag) { 
+                          if (!reviewFlag && !spamFlag && !urgentFlag) { 
                         ?>
                           <span style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚀 NEW INQUIRY</span>
                         <? } ?>
@@ -75,7 +88,7 @@
                   A new enquiry has been submitted through the RD3 Tech website.
                 </p>
 
-                <!-- FLAG REASONS WARNING BOX (Safe .forEach logic eliminates '<' parser issue) -->
+                <!-- FLAG REASONS WARNING BOX -->
                 <? 
                   var reasonsList = [];
                   if (typeof evalResult !== 'undefined' && evalResult) {
@@ -84,20 +97,16 @@
                     if (Array.isArray(evalResult.flagReasons)) reasonsList = reasonsList.concat(evalResult.flagReasons);
                     if (Array.isArray(evalResult.spamReasons)) reasonsList = reasonsList.concat(evalResult.spamReasons);
                   }
+                  if (typeof submission !== 'undefined' && submission) {
+                    if (Array.isArray(submission.reasons)) reasonsList = reasonsList.concat(submission.reasons);
+                    if (Array.isArray(submission.flags)) reasonsList = reasonsList.concat(submission.flags);
+                    if (submission.flagReasons && typeof submission.flagReasons === 'string') reasonsList.push(submission.flagReasons);
+                  }
                   if (typeof flagReasons !== 'undefined' && flagReasons) {
                     if (Array.isArray(flagReasons)) reasonsList = reasonsList.concat(flagReasons);
                     else reasonsList.push(flagReasons);
                   }
-                  if (typeof spamReasons !== 'undefined' && spamReasons) {
-                    if (Array.isArray(spamReasons)) reasonsList = reasonsList.concat(spamReasons);
-                    else reasonsList.push(spamReasons);
-                  }
-                  if (typeof reasons !== 'undefined' && reasons) {
-                    if (Array.isArray(reasons)) reasonsList = reasonsList.concat(reasons);
-                    else reasonsList.push(reasons);
-                  }
 
-                  // Safe deduplication without using '<' symbols
                   var uniqueReasons = [];
                   reasonsList.forEach(function(item) {
                     if (item && uniqueReasons.indexOf(item) === -1) {
@@ -119,14 +128,14 @@
 
                 <!-- Payload Extractors -->
                 <?
-                  var p = (typeof payload !== 'undefined' && payload) ? payload : ((typeof lead !== 'undefined' && lead) ? lead : ((typeof data !== 'undefined' && data) ? data : {}));
+                  var p = (typeof submission !== 'undefined' && submission) ? submission : ((typeof payload !== 'undefined' && payload) ? payload : ((typeof lead !== 'undefined' && lead) ? lead : ((typeof data !== 'undefined' && data) ? data : {})));
                   var vName = (typeof name !== 'undefined' && name) ? name : p.name;
                   var vEmail = (typeof email !== 'undefined' && email) ? email : p.email;
                   var vPhone = (typeof phone !== 'undefined' && phone) ? phone : p.phone;
                   var vAddress = (typeof address !== 'undefined' && address) ? address : p.address;
                   var vUserType = (typeof userType !== 'undefined' && userType) ? userType : (p.userType || p.category || category);
-                  var vSituation = (typeof situation !== 'undefined' && situation) ? situation : p.situation;
-                  var vGoal = (typeof achievement !== 'undefined' && achievement) ? achievement : (p.achievement || p.goal || goal);
+                  var vSituation = (typeof situation !== 'undefined' && situation) ? situation : (p.situation || p.subject);
+                  var vGoal = (typeof achievement !== 'undefined' && achievement) ? achievement : (p.achievement || p.message || p.goal || goal);
                   var vTimeframe = (typeof timeframe !== 'undefined' && timeframe) ? timeframe : p.timeframe;
                 ?>
 
