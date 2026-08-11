@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>RD3 Tech - Snippets Reference Library</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        color: #1e293b;
+      }
+      .container {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 0 20px 40px 20px;
+      }
+      .header {
+        background-color: #993333;
+        color: #ffffff;
+        padding: 24px 30px;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+      .back-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        text-decoration: none;
+        padding: 6px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+      .back-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+      }
+      .content-card {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        padding: 30px;
+      }
+      .snippet-section {
+        margin-bottom: 35px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .snippet-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      .badge {
+        font-size: 12px;
+        font-family: monospace;
+        background-color: #0284c7;
+        color: #ffffff;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .badge-purple {
+        background-color: #7c3aed;
+      }
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .title-row h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #0f172a;
+      }
+      .desc {
+        font-size: 14px;
+        color: #475569;
+        line-height: 1.5;
+        margin-bottom: 15px;
+      }
+      .code-container {
+        position: relative;
+        background-color: #0f172a;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .code-header {
+        background-color: #1e293b;
+        color: #94a3b8;
+        padding: 8px 16px;
+        font-size: 12px;
+        font-family: monospace;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #334155;
+      }
+      .copy-btn {
+        background: #0284c7;
+        color: #ffffff;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .copy-btn:hover {
+        background: #0369a1;
+      }
+      pre {
+        margin: 0;
+        padding: 16px;
+        color: #f1f5f9;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-x: auto;
+        max-height: 350px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📚 RD3 Snippets Technical Reference</h1>
+        <a href="?page=Index" class="back-btn">← Back to Hub</a>
+      </div>
+
+      <div class="content-card">
+
+        <!-- SECTION 1: Diagnostic Tester Shortcode -->
+        <div class="snippet-section">
+          <div class="title-row">
+            <h2>Diagnostic Web App Tester</h2>
+            <span class="badge badge-purple">[rd3_test_submit]</span>
+          </div>
+          <div class="desc">
+            WordPress backend diagnostic tool that executes live <strong>GET</strong> and <strong>POST</strong> (JSON / Form Encoded) requests to the Google Apps Script deployment URL. Handles cURL redirects (`302 Moved Temporarily`) properly without losing POST data payload context.
+          </div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>functions.php / Code Snippets (PHP)</span>
+              <button class="copy-btn" onclick="copyCode('code-diag')">Copy Code</button>
+            </div>
+            <pre id="code-diag"><code>/**
+ * RD3 Tech Web App Diagnostic Tester (Corrected Redirect Pipeline)
+ * Shortcode: [rd3_test_submit]
+ */
+add_shortcode('rd3_test_submit', function() {
+    $web_app_url = trim('https://script.google.com/macros/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/exec');
+
+    $run_test = isset($_POST['run_rd3_diag']) && check_admin_referer('rd3_diag_nonce');
+
+    $test_data = array(
+        'hp_website'  => '',
+        'website_hp'  => '',
+        'name'        => 'Diagnostic Test Lead',
+        'email'       => 'test@example.com',
+        'phone'       => '021000000',
+        'address'     => '123 Test Street, Auckland',
+        'userType'    => 'Home user',
+        'situation'   => 'Something Broken? — Fix a problem',
+        'achievement' => 'Testing WordPress backend connection to Google Apps Script.',
+        'timeframe'   => 'As soon as possible'
+    );
+
+    /**
+     * Standard Google Apps Script Compatible Request Handler
+     */
+    $execute_gas_request = function($url, $method = 'GET', $body = null, $content_type = null) {
+        if (!function_exists('curl_init')) {
+            return array('code' => 500, 'body' => 'PHP cURL extension is not enabled on this server.');
+        }
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RD3-Diagnostic-Client/1.0');
+
+        $headers = array('Expect:');
+
+        if ($method === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            if ($body !== null) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+            }
+            if ($content_type) {
+                $headers[] = 'Content-Type: ' . $content_type;
+            }
+        }
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $response_body = curl_exec($ch);
+        $http_code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($curl_error) {
+            return array('code' => 0, 'body' => 'cURL Error: ' . $curl_error);
+        }
+
+        return array('code' => $http_code, 'body' => $response_body);
+    };
+
+    ob_start();
+    ?&gt;
+    &lt;div style="background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; max-width: 750px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);"&gt;
+        &lt;div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #334155; padding-bottom: 12px;"&gt;
+            &lt;h3 style="color: #38bdf8; margin: 0; font-size: 18px;"&gt;RD3 Apps Script Diagnostic Hub&lt;/h3&gt;
+            &lt;form method="post" style="margin: 0;"&gt;
+                &lt;?php wp_nonce_field('rd3_diag_nonce'); ?&gt;
+                &lt;input type="hidden" name="run_rd3_diag" value="1"&gt;
+                &lt;button type="submit" style="background: #0284c7; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;"&gt;
+                     Run Diagnostic Tests
+                &lt;/button&gt;
+            &lt;/form&gt;
+        &lt;/div&gt;
+
+        &lt;p style="background: #1e293b; padding: 10px 14px; border-radius: 6px; word-break: break-all; font-size: 13px; margin-top: 0;"&gt;
+            &lt;strong style="color: #94a3b8;"&gt;Target Endpoint:&lt;/strong&gt;&lt;br&gt;
+            &lt;code style="color: #38bdf8; font-size: 12px;"&gt;&lt;?php echo esc_html($web_app_url); ?&gt;&lt;/code&gt;
+        &lt;/p&gt;
+
+        &lt;?php if (!$run_test) : ?&gt;
+            &lt;p style="color: #94a3b8; font-size: 14px; text-align: center; margin: 30px 0;"&gt;
+                Click &lt;strong&gt;"Run Diagnostic Tests"&lt;/strong&gt; above to re-run the tests with correct redirect handling.
+            &lt;/p&gt;
+        &lt;?php else : 
+            $response_get = $execute_gas_request($web_app_url, 'GET');
+
+            $response_json = $execute_gas_request(
+                $web_app_url, 
+                'POST', 
+                json_encode($test_data), 
+                'text/plain;charset=utf-8'
+            );
+
+            $response_form = $execute_gas_request(
+                $web_app_url, 
+                'POST', 
+                http_build_query($test_data), 
+                'application/x-www-form-urlencoded'
+            );
+
+            $render_result = function($title, $res) {
+                echo '&lt;h4 style="color: #facc15; margin: 20px 0 8px 0; font-size: 15px;"&gt;' . esc_html($title) . '&lt;/h4&gt;';
+
+                $code = $res['code'];
+                $body = $res['body'];
+
+                $badge_color = ($code &gt;= 200 &amp;&amp; $code &lt; 300) ? '#22c55e' : (($code &gt;= 300 &amp;&amp; $code &lt; 400) ? '#eab308' : '#ef4444');
+
+                $json_decoded = json_decode($body);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $formatted_body = json_encode($json_decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                } else {
+                    $formatted_body = $body;
+                }
+
+                echo '&lt;div style="font-size: 13px; margin-bottom: 6px;"&gt;';
+                echo '&lt;strong&gt;HTTP Status Code:&lt;/strong&gt; &lt;span style="background: ' . $badge_color . '; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold;"&gt;' . esc_html($code) . '&lt;/span&gt;';
+                echo '&lt;/div&gt;';
+
+                echo '&lt;pre style="background: #1e293b; padding: 12px; border-radius: 6px; overflow-x: auto; color: #a7f3d0; font-size: 12px; margin: 0; max-height: 250px;"&gt;' . esc_html($formatted_body) . '&lt;/pre&gt;';
+            };
+
+            $render_result('1. GET Endpoint Reachability Test', $response_get);
+            $render_result('2. POST JSON Payload Test Results', $response_json);
+            $render_result('3. POST Form URL-Encoded Payload Test Results', $response_form);
+
+        endif; ?&gt;
+    &lt;/div&gt;
+    &lt;?php
+    return ob_get_clean();
+});</code></pre>
+          </div>
+        </div>
+
+        <!-- SECTION 2: Contact Form Shortcode -->
+        <div class="snippet-section">
+          <div class="title-row">
+            <h2>Contact Form Integration</h2>
+            <span class="badge">[rd3_contact_form]</span>
+          </div>
+          <div class="desc">
+            Embeds a frontend panel that Posts general client requests directly into Google Forms using hidden target iframe mechanics.
+          </div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>functions.php / Code Snippets (PHP)</span>
+              <button class="copy-btn" onclick="copyCode('code-contact')">Copy Code</button>
+            </div>
+            <pre id="code-contact"><code>add_shortcode('rd3_contact_form', function() {
+    ob_start();
+    ?&gt;
+    &lt;iframe name="gform_target" id="gform_target" style="display:none;"&gt;&lt;/iframe&gt;
+    &lt;form action="https://docs.google.com/forms/d/e/1FAIpQLSdDhq-B8voXkJHZkSz5TOgF3R-LvRqwBW5TK2LW2DnjR1QJ0w/formResponse" method="POST" target="gform_target"&gt;
+        &lt;input type="text" name="entry.1576532276" placeholder="Your Name" required /&gt;
+        &lt;input type="email" name="entry.817428911" placeholder="Your Email" required /&gt;
+        &lt;button type="submit"&gt;Submit Request&lt;/button&gt;
+    &lt;/form&gt;
+    &lt;?php
+    return ob_get_clean();
+});</code></pre>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Lead Form Shortcode -->
+        <div class="snippet-section">
+          <div class="title-row">
+            <h2>Lead Capture Form (Async API)</h2>
+            <span class="badge">[rd3_lead_form]</span>
+          </div>
+          <div class="desc">
+            Asynchronous JavaScript lead form pushing structured data to the Google Apps Script Web App Endpoint.
+          </div>
+          <div class="code-container">
+            <div class="code-header">
+              <span>functions.php / Code Snippets (PHP)</span>
+              <button class="copy-btn" onclick="copyCode('code-lead')">Copy Code</button>
+            </div>
+            <pre id="code-lead"><code>add_shortcode('rd3_lead_form', function() {
+    ob_start();
+    ?&gt;
+    &lt;form id="rd3-async-lead-form"&gt;
+        &lt;input type="text" id="lead_name" placeholder="Full Name" required /&gt;
+        &lt;input type="tel" id="lead_phone" placeholder="Phone Number" required /&gt;
+        &lt;button type="button" onclick="submitRd3Lead()"&gt;Submit Lead&lt;/button&gt;
+    &lt;/form&gt;
+    &lt;script&gt;
+      function submitRd3Lead() {
+        const payload = {
+          name: document.getElementById('lead_name').value,
+          phone: document.getElementById('lead_phone').value
+        };
+        fetch('https://script.google.com/macros/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/exec', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        }).then(() =&gt; alert('Lead submitted!'));
+      }
+    &lt;/script&gt;
+    &lt;?php
+    return ob_get_clean();
+});</code></pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+      function copyCode(id) {
+        const codeText = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+          alert('Snippet copied to clipboard!');
+        });
+      }
+    </script>
+  </body>
+</html>
