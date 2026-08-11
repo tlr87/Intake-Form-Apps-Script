@@ -24,47 +24,50 @@
                       <!-- Dynamic Status Badges -->
                       <div style="margin-top: 8px;">
                         
-                        <!-- 1. REVIEW REQUIRED BADGE -->
-                        <? 
-                          var reviewFlag = (typeof isReviewRequired !== 'undefined' && isReviewRequired) || 
-                                           (typeof requiresReview !== 'undefined' && requiresReview) || 
-                                           (typeof isReview !== 'undefined' && isReview) || 
-                                           (typeof submission !== 'undefined' && submission && (submission.isReviewRequired || submission.requiresReview)) ||
-                                           (typeof evalResult !== 'undefined' && evalResult && (evalResult.isReviewRequired || evalResult.requiresReview));
-                          if (reviewFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚩 REVIEW REQUIRED</span>
-                        <? } ?>
+                        <!-- Dynamic Status Badges -->
+<div style="margin-top: 8px;">
+  
+  <!-- 1. REVIEW REQUIRED BADGE -->
+  <? 
+    var reviewFlag = (typeof isReviewRequired !== 'undefined' && isReviewRequired) || 
+                     (typeof requiresReview !== 'undefined' && requiresReview) || 
+                     (typeof isReview !== 'undefined' && isReview) || 
+                     (typeof submission !== 'undefined' && submission && (submission.isReviewRequired || submission.requiresReview)) ||
+                     (typeof evalResult !== 'undefined' && evalResult && (evalResult.isReviewRequired || evalResult.requiresReview));
+    if (reviewFlag) { 
+  ?>
+    <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">&#128681; REVIEW REQUIRED</span>
+  <? } ?>
 
-                        <!-- 2. SPAM DETECTED BADGE -->
-                        <? 
-                          var spamFlag = (typeof isSpam !== 'undefined' && isSpam) || 
-                                         (typeof submission !== 'undefined' && submission && submission.isSpam) ||
-                                         (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam);
-                          if (spamFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">⛔ SPAM DETECTED</span>
-                        <? } ?>
+  <!-- 2. SPAM DETECTED BADGE -->
+  <? 
+    var spamFlag = (typeof isSpam !== 'undefined' && isSpam) || 
+                   (typeof submission !== 'undefined' && submission && submission.isSpam) ||
+                   (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam);
+    if (spamFlag) { 
+  ?>
+    <span style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">&#9940; SPAM DETECTED</span>
+  <? } ?>
 
-                        <!-- 3. URGENT INQUIRY BADGE -->
-                        <? 
-                          var urgentFlag = (typeof isUrgent !== 'undefined' && isUrgent) || 
-                                           (typeof submission !== 'undefined' && submission && submission.isUrgent) ||
-                                           (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent);
-                          if (urgentFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚨 URGENT INQUIRY</span>
-                        <? } ?>
+  <!-- 3. URGENT INQUIRY BADGE -->
+  <? 
+    var urgentFlag = (typeof isUrgent !== 'undefined' && isUrgent) || 
+                     (typeof submission !== 'undefined' && submission && submission.isUrgent) ||
+                     (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent);
+    if (urgentFlag) { 
+  ?>
+    <span style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">&#128680; URGENT INQUIRY</span>
+  <? } ?>
 
-                        <!-- 4. DEFAULT NEW INQUIRY BADGE -->
-                        <? 
-                          if (!reviewFlag && !spamFlag && !urgentFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚀 NEW INQUIRY</span>
-                        <? } ?>
+  <!-- 4. DEFAULT NEW INQUIRY BADGE -->
+  <? 
+    if (!reviewFlag && !spamFlag && !urgentFlag) { 
+  ?>
+    <span style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">&#128640; NEW INQUIRY</span>
+  <? } ?>
 
-                      </div>
-                    </td>
+</div>
+</td>
 
                     <!-- Logo Badge -->
                     <td align="right" valign="middle" style="width: 76px;">

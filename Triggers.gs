@@ -189,3 +189,31 @@ function processLatestSheetRow() {
 }
 
 
+
+
+/**
+ * Clears all existing project triggers and installs a fresh 'onFormSubmit' trigger.
+ * Run this directly from the Apps Script editor toolbar.
+ */
+function setupFreshTrigger() {
+  // 1. Delete all existing triggers to clear ghost/broken triggers
+  var allTriggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < allTriggers.length; i++) {
+    ScriptApp.deleteTrigger(allTriggers[i]);
+  }
+  Logger.log("🗑️ Deleted " + allTriggers.length + " existing trigger(s).");
+
+  // 2. Identify the active container and install the trigger
+  var ss = getTargetSpreadsheet();
+  if (ss) {
+    ScriptApp.newTrigger('onFormSubmit')
+      .forSpreadsheet(ss)
+      .onFormSubmit()
+      .create();
+    Logger.log("✅ Installed fresh 'onFormSubmit' trigger bound to Spreadsheet: " + ss.getName());
+  } else {
+    Logger.log("❌ Could not locate Spreadsheet to bind trigger.");
+  }
+}
+
+

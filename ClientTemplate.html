@@ -20,43 +20,7 @@
                   <tr>
                     <td valign="middle">
                       <div style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; margin: 0; font-family: Arial, sans-serif;">RD3 TECH</div>
-                      
-                      <!-- Dynamic Status Badges -->
-                      <div style="margin-top: 8px;">
-                        
-                        <!-- 1. REVIEW REQUIRED BADGE -->
-                        <? 
-                          var reviewFlag = (typeof isReviewRequired !== 'undefined' && isReviewRequired) || 
-                                           (typeof requiresReview !== 'undefined' && requiresReview) || 
-                                           (typeof isReview !== 'undefined' && isReview) || 
-                                           (typeof submission !== 'undefined' && submission && (submission.isReviewRequired || submission.requiresReview)) ||
-                                           (typeof evalResult !== 'undefined' && evalResult && (evalResult.isReviewRequired || evalResult.requiresReview));
-                          if (reviewFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚩 REVIEW REQUIRED</span>
-                        <? } ?>
-
-                        <!-- 2. SPAM DETECTED BADGE -->
-                        <? 
-                          var spamFlag = (typeof isSpam !== 'undefined' && isSpam) || 
-                                         (typeof submission !== 'undefined' && submission && submission.isSpam) ||
-                                         (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam);
-                          if (spamFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">⛔ SPAM DETECTED</span>
-                        <? } ?>
-
-                        <!-- 3. URGENT INQUIRY BADGE -->
-                        <? 
-                          var urgentFlag = (typeof isUrgent !== 'undefined' && isUrgent) || 
-                                           (typeof submission !== 'undefined' && submission && submission.isUrgent) ||
-                                           (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent);
-                          if (urgentFlag) { 
-                        ?>
-                          <span style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚨 URGENT INQUIRY</span>
-                        <? } ?>
-
-                      </div>
+                      <div style="color: #f1f5f9; font-size: 13px; margin-top: 4px; font-family: Arial, sans-serif;">Enquiry Confirmation</div>
                     </td>
 
                     <!-- Logo Badge -->
@@ -95,107 +59,49 @@
                   Thanks for getting in touch with RD3 Tech. We've successfully received your enquiry and one of our team members will review it as soon as possible.
                 </p>
 
-                <!-- FLAG REASONS WARNING BOX (BULLETED LIST) -->
-                <? 
-                  var rawReasonsList = [];
-                  if (typeof evalResult !== 'undefined' && evalResult) {
-                    if (Array.isArray(evalResult.flags)) rawReasonsList = rawReasonsList.concat(evalResult.flags);
-                    if (Array.isArray(evalResult.reasons)) rawReasonsList = rawReasonsList.concat(evalResult.reasons);
-                    if (Array.isArray(evalResult.flagReasons)) rawReasonsList = rawReasonsList.concat(evalResult.flagReasons);
-                    if (Array.isArray(evalResult.spamReasons)) rawReasonsList = rawReasonsList.concat(evalResult.spamReasons);
-                  }
-                  if (typeof submission !== 'undefined' && submission) {
-                    if (Array.isArray(submission.reasons)) rawReasonsList = rawReasonsList.concat(submission.reasons);
-                    if (Array.isArray(submission.flags)) rawReasonsList = rawReasonsList.concat(submission.flags);
-                    if (submission.flagReasons && typeof submission.flagReasons === 'string') rawReasonsList.push(submission.flagReasons);
-                  }
-                  if (typeof flagReasons !== 'undefined' && flagReasons) {
-                    if (Array.isArray(flagReasons)) rawReasonsList = rawReasonsList.concat(flagReasons);
-                    else rawReasonsList.push(flagReasons);
-                  }
-
-                  // 1. Join all items and insert a delimiter before known header prefixes in case they were concatenated
-                  var combinedText = rawReasonsList.join(" | ");
-                  var headerRegex = /(Goal \/ Desired Outcome matched review keyword\(s\):?|Flagged Review Keyword:?|Urgent timeframe detected:?|Urgent Request:?|Suspicious phone format:?|Suspicious Phone Number:?|Suspicious Phone:?|Spam Keyword Matched:?)/gi;
-                  
-                  // Insert a unique splitter `|||` before every header match
-                  var preSplitText = combinedText.replace(headerRegex, '|||$1');
-
-                  // 2. Split into individual list items and clean up whitespace/delimiters
-                  var splitItems = preSplitText.split('|||');
-                  var parsedList = [];
-
-                  splitItems.forEach(function(item) {
-                    var trimmed = item.trim().replace(/^\|+|\|+$/g, '').trim();
-                    if (trimmed && parsedList.indexOf(trimmed) === -1) {
-                      parsedList.push(trimmed);
-                    }
-                  });
-
-                  // 3. Apply Bold Formatting to headers
-                  var formattedReasons = parsedList.map(function(item) {
-                    return String(item)
-                      .replace(/Goal \/ Desired Outcome matched review keyword\(s\):?/gi, '<strong>Goal / Desired Outcome matched review keyword(s):</strong>')
-                      .replace(/Flagged Review Keyword:?/gi, '<strong>Flagged Review Keyword:</strong>')
-                      .replace(/Urgent timeframe detected:?/gi, '<strong>Urgent timeframe detected:</strong>')
-                      .replace(/Urgent Request:?/gi, '<strong>Urgent Request:</strong>')
-                      .replace(/Suspicious phone format:?/gi, '<strong>Suspicious phone format:</strong>')
-                      .replace(/Suspicious Phone Number:?/gi, '<strong>Suspicious Phone Number:</strong>')
-                      .replace(/Suspicious Phone:?/gi, '<strong>Suspicious Phone:</strong>')
-                      .replace(/Spam Keyword Matched:?/gi, '<strong>Spam Keyword Matched:</strong>');
-                  });
-                  
-                  if (formattedReasons.length > 0) {
-                ?>
-                  <div style="background-color: #fffbeeb3; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-family: Arial, sans-serif;">
-                    <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                      ⚠️ Evaluation Flag Reasons:
-                    </div>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #78350f; line-height: 1.5;">
-                      <? formattedReasons.forEach(function(reason) { ?>
-                        <li style="margin-bottom: 4px;"><?!= reason ?></li>
-                      <? }); ?>
-                    </ul>
-                  </div>
-                <? } ?>
-
-                <!-- Submission Details Section (No Field Labels) -->
+                <!-- Summary of Submitted Details Section -->
                 <div style="font-size: 13px; font-weight: 700; color: #993333; text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 14px 0; padding-bottom: 6px; border-bottom: 2px solid #CADFEC; font-family: Arial, sans-serif;">
-                  Client Information
+                  Summary of Your Request
                 </div>
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
                   <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; width: 140px; font-family: Arial, sans-serif;">Name:</td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vName ? vName : 'Not provided' ?></td>
                   </tr>
                   <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Email:</td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;">
                       <a href="mailto:<?= vEmail ? vEmail : '' ?>" style="color: #993333; text-decoration: underline;"><?= vEmail ? vEmail : 'Not provided' ?></a>
                     </td>
                   </tr>
+                  <? if (vPhone && vPhone !== 'N/A') { ?>
                   <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vPhone ? vPhone : 'Not provided' ?></td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Phone:</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vPhone ?></td>
+                  </tr>
+                  <? } ?>
+                  <? if (vAddress && vAddress !== 'N/A') { ?>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Location:</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vAddress ?></td>
+                  </tr>
+                  <? } ?>
+                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Subject / Category:</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vSituation ? vSituation : 'General Inquiry' ?></td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vAddress ? vAddress : 'Not provided' ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vUserType ? vUserType : 'Not provided' ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vSituation ? vSituation : 'Not provided' ?></td>
-                  </tr>
-                  <tr>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Details / Goal:</td>
                     <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vGoal ? vGoal : 'Not provided' ?></td>
                   </tr>
+                  <? if (vTimeframe && vTimeframe !== 'N/A') { ?>
                   <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vTimeframe ? vTimeframe : 'Not provided' ?></td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Timeframe:</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vTimeframe ?></td>
                   </tr>
+                  <? } ?>
                 </table>
-
-                <p style="font-size: 13px; color: #64748b; margin-top: 16px; margin-bottom: 24px; font-family: Arial, sans-serif;">
-                  Tip: Reply directly to this email or click the client email link above to initiate contact.
-                </p>
 
                 <!-- What Happens Next Section -->
                 <div style="border-left: 4px solid #993333; background-color: #f8fafc; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 0 6px 6px 0; padding: 20px; margin-bottom: 24px; font-family: Arial, sans-serif;">

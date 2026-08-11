@@ -14,36 +14,12 @@ var SheetLogger = (function () {
       leadData = leadData || {};
       evalResult = evalResult || {};
 
-      var ss = null;
+      // 1. Direct call to global getTargetSpreadsheet() defined in Config.gs
+      var ss = (typeof getTargetSpreadsheet === 'function') 
+        ? getTargetSpreadsheet() 
+        : SpreadsheetApp.getActiveSpreadsheet();
 
-      // 1. Attempt using getTargetSpreadsheet() from Config.gs
-      if (typeof getTargetSpreadsheet === 'function') {
-        try {
-          ss = getTargetSpreadsheet();
-        } catch (e) {
-          Logger.log('getTargetSpreadsheet() call failed: ' + e.toString());
-        }
-      }
-
-      // 2. Attempt opening by SPREADSHEET_ID if set in CONFIG (for standalone scripts)
-      if (!ss && typeof CONFIG !== 'undefined' && CONFIG.SPREADSHEET_ID) {
-        try {
-          ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-        } catch (e) {
-          Logger.log('Could not open spreadsheet by CONFIG.SPREADSHEET_ID: ' + e.toString());
-        }
-      }
-
-      // 3. Fallback to active spreadsheet bound to script
-      if (!ss) {
-        try {
-          ss = SpreadsheetApp.getActiveSpreadsheet();
-        } catch (e) {
-          Logger.log('SpreadsheetApp.getActiveSpreadsheet() failed: ' + e.toString());
-        }
-      }
-
-      // Guard clause: Exit gracefully if no spreadsheet is bound or configured
+      // Guard clause: Exit gracefully if no spreadsheet is available
       if (!ss) {
         Logger.log('SheetLogger Notice: No Google Sheet available. (Add SPREADSHEET_ID to CONFIG in Config.gs if using a standalone script).');
         return;
@@ -51,7 +27,7 @@ var SheetLogger = (function () {
 
       var targetSheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) 
         ? CONFIG.SHEET_NAME 
-        : 'Leads';
+        : 'Form Responses 1';
 
       var sheet = ss.getSheetByName(targetSheetName);
 
@@ -79,16 +55,18 @@ var SheetLogger = (function () {
       var statusLabel = 'Clean';
       if (evalResult.isSpam) {
         statusLabel = 'Spam';
-      } else if (evalResult.requiresReview) {
+      } else if (evalResult.requiresReview || evalResult.isReviewRequired) {
         statusLabel = 'Review Required';
       } else if (evalResult.isUrgent) {
         statusLabel = 'Urgent';
       }
 
-      // Format flags/reasons array into readable string
+      // Format flags/reasons into a readable string
       var flagDetails = '';
       if (evalResult.flags && evalResult.flags.length > 0) {
         flagDetails = evalResult.flags.join('; ');
+      } else if (evalResult.flagReasons) {
+        flagDetails = Array.isArray(evalResult.flagReasons) ? evalResult.flagReasons.join('; ') : evalResult.flagReasons;
       } else if (evalResult.flagReason) {
         flagDetails = evalResult.flagReason;
       }
@@ -100,9 +78,9 @@ var SheetLogger = (function () {
         leadData.email || 'Not provided',
         leadData.phone || 'Not provided',
         leadData.address || 'Not provided',
-        leadData.userType || evalResult.category || 'General Inquiry',
-        leadData.situation || '',
-        leadData.achievement || '',
+        leadData.userType || leadData.category || evalResult.category || 'General Inquiry',
+        leadData.situation || leadData.subject || '',
+        leadData.achievement || leadData.message || '',
         leadData.timeframe || '',
         evalResult.spamScore || 0,
         flagDetails

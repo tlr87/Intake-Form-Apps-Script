@@ -137,7 +137,20 @@ function processSubmission(rawData) {
   }
 
   var nameVal = getValue(['entry.1576532276', 'entry_1576532276', 'name', 'fullName', 'full_name', 'your_name', 'Name'], "N/A");
-  var emailVal = getValue(['entry.817428911', 'entry_817428911', 'email', 'emailAddress', 'email_address', 'Email'], "N/A");
+  
+  // Extract email address with fallback to scan all input fields for an '@' symbol
+  var emailVal = getValue(['entry.817428911', 'entry_817428911', 'email', 'emailAddress', 'email_address', 'Email', 'Your Email', 'contact_email'], "N/A");
+  if (emailVal === "N/A" && rawData) {
+    for (var rawK in rawData) {
+      if (!rawData.hasOwnProperty(rawK)) continue;
+      var rawV = String(rawData[rawK]).trim();
+      if (rawV.indexOf("@") !== -1 && rawV.indexOf(".") !== -1 && rawV.indexOf(" ") === -1) {
+        emailVal = rawV;
+        break;
+      }
+    }
+  }
+
   var phoneVal = getValue(['entry.1285532466', 'entry_1285532466', 'phone', 'phoneNumber', 'contact_number', 'mobile', 'Phone'], "N/A");
   var addressVal = getValue(['entry.1293794731', 'entry_1293794731', 'address', 'location', 'Address'], "N/A");
   var categoryVal = getValue(['entry.343301224', 'entry_343301224', 'userType', 'category', 'usertype'], evaluation.category || "General Inquiry");
@@ -274,7 +287,6 @@ function evaluateSubmission(rawData, map) {
     }
     if (goalMatches.length > 0) {
       isReviewRequired = true;
-      spamScore += goalMatches.length;
       flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
     }
   }
@@ -311,12 +323,11 @@ function evaluateSubmission(rawData, map) {
     flagReasons.push("Contains multiple URLs (" + linkCount + ")");
   }
 
-  // 5. Phone Validation
-  var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || '').replace(/[^0-9]/g, '');
+  // 5. Phone Validation (Restricted to repeated single-digits)
+  var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || map['entry.1285532466'] || '').replace(/[^0-9]/g, '');
   if (phoneStr.length > 0) {
-    if (/^0+$/.test(phoneStr) || /^(\d)\1+$/.test(phoneStr) || phoneStr === '123456789' || phoneStr === '0123456789' || phoneStr.length < 7) {
-      spamScore += 2;
-      isSpam = true;
+    if (/^0+$/.test(phoneStr) || /^1+$/.test(phoneStr)) {
+      spamScore += 1;
       flagReasons.push("Suspicious phone format");
     }
   }
@@ -495,11 +506,16 @@ function sendAdminNotification(submission, evalResult) {
 
     var htmlBody = template.evaluate().getContent();
 
-    GmailApp.sendEmail(adminEmail, adminSubject, "Please enable HTML in your email client to view this message.", {
+    var emailOptions = {
       htmlBody: htmlBody,
-      name: senderName,
-      replyTo: (submission.email && submission.email !== 'N/A' && submission.email.indexOf("@") !== -1) ? submission.email : undefined
-    });
+      name: senderName
+    };
+
+    if (submission.email && submission.email !== 'N/A' && submission.email.indexOf("@") !== -1) {
+      emailOptions.replyTo = submission.email;
+    }
+
+    GmailApp.sendEmail(adminEmail, adminSubject, "Please enable HTML in your email client to view this message.", emailOptions);
 
     Logger.log("✅ Admin Notification sent successfully to: " + adminEmail);
   } catch (adminErr) {
@@ -509,76 +525,62 @@ function sendAdminNotification(submission, evalResult) {
 
 function sendClientConfirmation(submission) {
   submission = submission || {};
-
+  var clientEmail = submission.email ? String(submission.email).trim() : "";
   var senderName = (typeof CONFIG !== 'undefined' && CONFIG.SENDER_NAME) ? CONFIG.SENDER_NAME : "RD3 Tech";
   var companyName = (typeof CONFIG !== 'undefined' && CONFIG.COMPANY_NAME) ? CONFIG.COMPANY_NAME : senderName;
 
-  var categoryText = String(submission.category || submission.userType || "General Inquiry");
+  if (submission.isSpam) {
+    Logger.log("⚠️ Skipped Client Email: Marked as SPAM.");
+    return;
+  }
 
-  if (!submission.isSpam && submission.email && submission.email !== 'N/A' && submission.email.indexOf("@") !== -1) {
-    try {
-      var clientSubject = "We received your request - " + companyName;
+  if (!clientEmail || clientEmail === "N/A" || clientEmail.indexOf("@") === -1) {
+    Logger.log("❌ Skipped Client Email: Invalid email address ('" + clientEmail + "').");
+    return;
+  }
 
-      var template = HtmlService.createTemplateFromFile("ClientTemplate");
+  try {
+    var clientSubject = "We received your request - " + companyName;
+    var template = HtmlService.createTemplateFromFile("ClientTemplate");
 
-      template.submission = submission;
-      template.companyName = companyName;
-      template.senderName = senderName;
+    template.submission = submission;
+    template.companyName = companyName;
+    template.senderName = senderName;
 
-      template.category = categoryText;
-      template.userType = categoryText;
-      template.name = submission.name || "N/A";
-      template.email = submission.email || "N/A";
-      template.phone = submission.phone || "N/A";
-      template.address = submission.address || "N/A";
-      template.subject = submission.subject || submission.situation || "N/A";
-      template.situation = submission.situation || submission.subject || "N/A";
-      template.message = submission.message || submission.achievement || "N/A";
-      template.achievement = submission.achievement || submission.message || "N/A";
-      template.timeframe = submission.timeframe || "N/A";
+    template.name = submission.name || "N/A";
+    template.email = clientEmail;
+    template.phone = submission.phone || "N/A";
+    template.subject = submission.subject || "N/A";
+    template.message = submission.message || "N/A";
 
-      var htmlBody = template.evaluate().getContent();
+    var htmlBody = template.evaluate().getContent();
 
-      GmailApp.sendEmail(submission.email, clientSubject, "Please enable HTML in your email client to view this message.", {
-        htmlBody: htmlBody,
-        name: senderName
-      });
+    GmailApp.sendEmail(clientEmail, clientSubject, "Please enable HTML to view this email.", {
+      htmlBody: htmlBody,
+      name: senderName
+    });
 
-      Logger.log("✅ Client Confirmation Email sent successfully to: " + submission.email);
-    } catch (clientErr) {
-      Logger.log("❌ Client Email Error: " + clientErr.toString());
-    }
-  } else {
-    Logger.log("⚠️ Skipped Client Email: Invalid recipient email ('" + submission.email + "') or flagged as spam.");
+    Logger.log("✅ Client Confirmation Email successfully sent to: " + clientEmail);
+  } catch (err) {
+    Logger.log("❌ Client Email Error: " + err.toString());
   }
 }
 
 function getTargetSpreadsheetInstance() {
-
   if (typeof getTargetSpreadsheet === 'function') {
-
     return getTargetSpreadsheet();
-
   }
 
   if (typeof CONFIG !== 'undefined' && CONFIG.SPREADSHEET_ID) {
-
     try {
-
       return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-
     } catch (e) {
-
       Logger.log("Failed opening spreadsheet by ID: " + e.toString());
-
     }
-
   }
 
   return SpreadsheetApp.getActiveSpreadsheet();
-
 } 
-
 
 function parseIncomingRequest(e) {
   if (!e) return {};
@@ -588,4 +590,21 @@ function parseIncomingRequest(e) {
     } catch (err) {}
   }
   return e.parameter || {};
+}
+
+/**
+ * Run this function directly in Google Apps Script Editor to test client & admin dispatches
+ */
+function testClientEmailDirectly() {
+  var testPayload = {
+    "Name": "John Test",
+    "Email": "tom@rd3tech.com", // Replace with recipient email address to receive test
+    "Phone": "0211234567",
+    "Situation": "Need help with network setup",
+    "Message": "Testing client confirmation email sending."
+  };
+  
+  Logger.log("--- STARTING DIRECT TEST ---");
+  var result = processSubmission(testPayload);
+  Logger.log("--- TEST RESULT COMPLETE ---");
 }
