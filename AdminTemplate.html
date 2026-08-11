@@ -1,126 +1,208 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <base target="_top">
-    <style>
-      body {
-        font-family: Arial, Helvetica, sans-serif;
-        color: #333333;
-        background-color: #f4f6f8;
-        margin: 0;
-        padding: 20px 0;
-      }
-      .email-card {
-        max-width: 600px;
-        margin: 0 auto;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 24px;
-        background-color: #ffffff;
-      }
-      .header-title {
-        color: #0f172a;
-        margin-top: 0;
-        font-size: 20px;
-        border-bottom: 2px solid #2563eb;
-        padding-bottom: 8px;
-      }
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 16px;
-      }
-      .table td {
-        padding: 10px;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 14px;
-      }
-      .label-col {
-        font-weight: bold;
-        width: 35%;
-        color: #475569;
-      }
-      .bg-alt {
-        background-color: #f8fafc;
-      }
-      .banner-spam {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 12px 16px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-        font-weight: bold;
-      }
-      .banner-review {
-        background-color: #fff3cd;
-        color: #856404;
-        padding: 12px 16px;
-        border-radius: 6px;
-        margin-bottom: 20px;
-        font-weight: bold;
-      }
-      .footer {
-        font-size: 12px;
-        color: #94a3b8;
-        margin-top: 24px;
-        text-align: right;
-      }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   </head>
-  <body>
-    <div class="email-card" style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; background-color: #ffffff;">
-      
-      <!-- Conditional Flag Banners -->
-      <? if (typeof isSpam !== 'undefined' && isSpam) { ?>
-        <div class="banner-spam" style="background-color: #f8d7da; color: #721c24; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
-          🚫 SPAM NOTICE: Honeypot field was filled out on this submission.
-        </div>
-      <? } else if (typeof requiresReview !== 'undefined' && requiresReview) { ?>
-        <div class="banner-review" style="background-color: #fff3cd; color: #856404; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-weight: bold;">
-          ⚠️ PLEASE REVIEW: Submission contains flagged keyword(s): <?= (typeof matchedTerms !== 'undefined' && Array.isArray(matchedTerms)) ? matchedTerms.join(", ") : matchedTerms ?>
-        </div>
-      <? } ?>
+  <body style="margin: 0; padding: 0; background-color: #CADFEC; font-family: Arial, sans-serif;">
+    <!-- Outer Wrapper Table -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #CADFEC; width: 100%; table-layout: fixed;">
+      <tr>
+        <td align="center" style="padding: 30px 15px;">
+          
+          <!-- Main Card -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; color: #1e293b;">
+            
+            <!-- Header with Title, Status Badges & Logo Badge -->
+            <tr>
+              <td style="background-color: #993333; padding: 24px 30px; color: #ffffff;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td valign="middle">
+                      <div style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; margin: 0; font-family: Arial, sans-serif;">RD3 TECH — NEW INQUIRY</div>
+                      
+                      <!-- Dynamic Status Badges -->
+                      <div style="margin-top: 8px;">
+                        
+                        <!-- 1. REVIEW REQUIRED BADGE -->
+                        <? if ((typeof requiresReview !== 'undefined' && requiresReview) || (typeof isReview !== 'undefined' && isReview) || (typeof evalResult !== 'undefined' && evalResult && evalResult.requiresReview)) { ?>
+                          <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚩 REVIEW REQUIRED</span>
+                        <? } ?>
 
-      <h2 class="header-title" style="color: #0f172a; margin-top: 0; font-size: 20px; border-bottom: 2px solid #2563eb; padding-bottom: 8px;">New Contact Submission</h2>
+                        <!-- 2. SPAM DETECTED BADGE -->
+                        <? if ((typeof isSpam !== 'undefined' && isSpam) || (typeof evalResult !== 'undefined' && evalResult && evalResult.isSpam)) { ?>
+                          <span style="display: inline-block; background-color: #ef4444; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">⛔ SPAM DETECTED</span>
+                        <? } ?>
 
-      <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-        <tr class="bg-alt" style="background-color: #f8fafc;">
-          <td class="label-col" style="padding: 10px; font-weight: bold; width: 35%; border-bottom: 1px solid #e2e8f0; color: #475569;">Name</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= name || "Not provided" ?></td>
-        </tr>
-        <tr>
-          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Email</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
-            <? if (typeof email !== 'undefined' && email) { ?>
-              <a href="mailto:<?= email ?>" style="color: #2563eb; text-decoration: none;"><?= email ?></a>
-            <? } else { ?>
-              Not provided
-            <? } ?>
-          </td>
-        </tr>
-        <tr class="bg-alt" style="background-color: #f8fafc;">
-          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Phone</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= phone || "Not provided" ?></td>
-        </tr>
-        <tr>
-          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Client Category</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= userType || "Not specified" ?></td>
-        </tr>
-        <tr class="bg-alt" style="background-color: #f8fafc;">
-          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Situation</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= situation || "Not specified" ?></td>
-        </tr>
-        <tr>
-          <td class="label-col" style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0; color: #475569;">Goal / Outcome</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><?= achievement || "Not specified" ?></td>
-        </tr>
-        <tr class="bg-alt" style="background-color: #f8fafc;">
-          <td class="label-col" style="padding: 10px; font-weight: bold; color: #475569;">Timeframe</td>
-          <td style="padding: 10px;"><?= timeframe || "Not specified" ?></td>
-        </tr>
-      </table>
+                        <!-- 3. URGENT INQUIRY BADGE -->
+                        <? if ((typeof isUrgent !== 'undefined' && isUrgent) || (typeof evalResult !== 'undefined' && evalResult && evalResult.isUrgent)) { ?>
+                          <span style="display: inline-block; background-color: #ea580c; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚨 URGENT INQUIRY</span>
+                        <? } ?>
 
-      <p class="footer" style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: right;">Submitted on <?= submitTime || "N/A" ?></p>
-    </div>
+                        <!-- 4. DEFAULT NEW INQUIRY BADGE -->
+                        <? 
+                          var hasFlag = (typeof isSpam !== 'undefined' && isSpam) || 
+                                        (typeof isUrgent !== 'undefined' && isUrgent) || 
+                                        (typeof requiresReview !== 'undefined' && requiresReview) || 
+                                        (typeof evalResult !== 'undefined' && evalResult && (evalResult.isSpam || evalResult.isUrgent || evalResult.requiresReview));
+                          if (!hasFlag) { 
+                        ?>
+                          <span style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #ffffff; font-family: Arial, sans-serif; margin-right: 4px; margin-bottom: 4px;">🚀 NEW INQUIRY</span>
+                        <? } ?>
+
+                      </div>
+                    </td>
+
+                    <!-- Logo Badge -->
+                    <td align="right" valign="middle" style="width: 76px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; padding: 6px;">
+                        <tr>
+                          <td align="center" valign="middle">
+                            <img src="https://i0.wp.com/rd3tech.com/wp-content/uploads/2023/03/cropped-RD3Logo.png?resize=300%2C300&amp;ssl=1" alt="RD3 Tech Logo" width="60" height="60" style="display: block; border: 0; outline: none; text-decoration: none; border-radius: 4px;">
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Body Content -->
+            <tr>
+              <td style="padding: 30px; background-color: #ffffff;">
+                <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-top: 0; margin-bottom: 12px; font-family: Arial, sans-serif;">
+                  A new enquiry has been submitted through the RD3 Tech website.
+                </p>
+
+                <!-- FLAG REASONS WARNING BOX (Safe .forEach logic eliminates '<' parser issue) -->
+                <? 
+                  var reasonsList = [];
+                  if (typeof evalResult !== 'undefined' && evalResult) {
+                    if (Array.isArray(evalResult.flags)) reasonsList = reasonsList.concat(evalResult.flags);
+                    if (Array.isArray(evalResult.reasons)) reasonsList = reasonsList.concat(evalResult.reasons);
+                    if (Array.isArray(evalResult.flagReasons)) reasonsList = reasonsList.concat(evalResult.flagReasons);
+                    if (Array.isArray(evalResult.spamReasons)) reasonsList = reasonsList.concat(evalResult.spamReasons);
+                  }
+                  if (typeof flagReasons !== 'undefined' && flagReasons) {
+                    if (Array.isArray(flagReasons)) reasonsList = reasonsList.concat(flagReasons);
+                    else reasonsList.push(flagReasons);
+                  }
+                  if (typeof spamReasons !== 'undefined' && spamReasons) {
+                    if (Array.isArray(spamReasons)) reasonsList = reasonsList.concat(spamReasons);
+                    else reasonsList.push(spamReasons);
+                  }
+                  if (typeof reasons !== 'undefined' && reasons) {
+                    if (Array.isArray(reasons)) reasonsList = reasonsList.concat(reasons);
+                    else reasonsList.push(reasons);
+                  }
+
+                  // Safe deduplication without using '<' symbols
+                  var uniqueReasons = [];
+                  reasonsList.forEach(function(item) {
+                    if (item && uniqueReasons.indexOf(item) === -1) {
+                      uniqueReasons.push(item);
+                    }
+                  });
+                  
+                  if (uniqueReasons.length > 0) {
+                ?>
+                  <div style="background-color: #fffbeeb3; border: 1px solid #fcd34d; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-family: Arial, sans-serif;">
+                    <div style="font-size: 12px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                      ⚠️ Evaluation Flag Reasons:
+                    </div>
+                    <div style="font-size: 13px; color: #78350f; line-height: 1.4;">
+                      <?= uniqueReasons.join(" | ") ?>
+                    </div>
+                  </div>
+                <? } ?>
+
+                <!-- Payload Extractors -->
+                <?
+                  var p = (typeof payload !== 'undefined' && payload) ? payload : ((typeof lead !== 'undefined' && lead) ? lead : ((typeof data !== 'undefined' && data) ? data : {}));
+                  var vName = (typeof name !== 'undefined' && name) ? name : p.name;
+                  var vEmail = (typeof email !== 'undefined' && email) ? email : p.email;
+                  var vPhone = (typeof phone !== 'undefined' && phone) ? phone : p.phone;
+                  var vAddress = (typeof address !== 'undefined' && address) ? address : p.address;
+                  var vUserType = (typeof userType !== 'undefined' && userType) ? userType : (p.userType || p.category || category);
+                  var vSituation = (typeof situation !== 'undefined' && situation) ? situation : p.situation;
+                  var vGoal = (typeof achievement !== 'undefined' && achievement) ? achievement : (p.achievement || p.goal || goal);
+                  var vTimeframe = (typeof timeframe !== 'undefined' && timeframe) ? timeframe : p.timeframe;
+                ?>
+
+                <!-- Submission Details Section -->
+                <div style="font-size: 13px; font-weight: 700; color: #993333; text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 14px 0; padding-bottom: 6px; border-bottom: 2px solid #CADFEC; font-family: Arial, sans-serif;">
+                  Client Information
+                </div>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; width: 38%; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Name</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vName ? vName : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Email</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;">
+                      <a href="mailto:<?= vEmail ? vEmail : '' ?>" style="color: #993333; text-decoration: underline;"><?= vEmail ? vEmail : 'Not provided' ?></a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Phone</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vPhone ? vPhone : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Address / Location</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vAddress ? vAddress : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Category</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vUserType ? vUserType : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Situation</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vSituation ? vSituation : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Goal / Desired Outcome</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vGoal ? vGoal : 'Not provided' ?></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; font-family: Arial, sans-serif;">Timeframe</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vTimeframe ? vTimeframe : 'Not provided' ?></td>
+                  </tr>
+                </table>
+
+                <p style="font-size: 13px; color: #64748b; margin-top: 16px; margin-bottom: 20px; font-family: Arial, sans-serif;">
+                  Tip: Reply directly to this email or click the client email link above to initiate contact.
+                </p>
+
+                <!-- Internal Execution Principles -->
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #993333; border-radius: 6px; padding: 16px; font-size: 12px; line-height: 1.5; color: #334155; font-family: Arial, sans-serif;">
+                  <p style="margin: 0 0 10px 0; font-weight: 700; color: #993333; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Internal Execution Principles
+                  </p>
+                  <p style="margin: 0 0 8px 0;">
+                    <strong style="color: #0f172a;">Target Outcome:</strong> Focus on what the client is actually trying to achieve before touching the task.
+                  </p>
+                  <p style="margin: 0 0 8px 0;">
+                    <strong style="color: #0f172a;">Clear Scope:</strong> Ask direct questions to lock down limits, costs, and responsibilities—no assumptions.
+                  </p>
+                  <p style="margin: 0;">
+                    <strong style="color: #0f172a;">Risk Control:</strong> Spot technical, financial, and communication failure points early.
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background-color: #f1f5f9; padding: 16px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; font-family: Arial, sans-serif;">
+                RD3 Tech | Your Technology Support Journey Starts Here | <a href="mailto:tom@rd3tech.com" style="color: #993333; text-decoration: underline;">tom@rd3tech.com</a> | <a href="https://rd3tech.com/" style="color: #993333; text-decoration: underline;">https://rd3tech.com/</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

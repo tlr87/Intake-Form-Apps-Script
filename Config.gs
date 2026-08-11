@@ -4,38 +4,70 @@
 const CONFIG = {
   ADMIN_EMAIL: "tom@rd3tech.com",
   COMPANY_NAME: "RD3 Tech",
-  SHEET_NAME: "Leads",
-  SPAM_THRESHOLD: 3, // Flag lead if spam score >= 3
+  SENDER_NAME: "RD3 Tech",
+  SPREADSHEET_ID: "1FNzJIm_njbU9d9Rv_dfJe9ChzG8f6ICJOF6bIAxrLUY",
+  SHEET_NAME: "Submissions",
+  SPAM_THRESHOLD: 3,
+  TIMEZONE: "Pacific/Auckland",
+  HONEYPOT_FIELD: "website",
+
   DEFAULT_TAXONOMY: {
-    "categories": [
-      {
-        "name": "TV & Display Repair",
-        "keywords": ["tv", "tv screen", "tv panel", "television", "antenna", "tv reception"]
-      },
-      {
-        "name": "Mobile & Tablet Repair",
-        "keywords": ["phone screen replacement", "mobile screen replacement", "battery replacement", "charging port", "water damage", "tablet screen"]
-      },
-      {
-        "name": "Consoles & Electronics",
-        "keywords": ["soldering", "electronics repair", "console repair", "playstation", "xbox", "nintendo"]
-      },
-      {
-        "name": "Appliances & Electrical",
-        "keywords": ["appliance repair", "whiteware", "electrical wiring"]
-      },
-      {
-        "name": "Warranty Service",
-        "keywords": ["warranty repair", "manufacturer warranty"]
-      }
+    spamKeywords: [
+      "casino",
+      "viagra",
+      "loans",
+      "invest",
+      "crypto loans",
+      "cheap credits"
+    ],
+    reviewKeywords: [
+      "crypto",
+      "seo",
+      "guest post",
+      "backlinks",
+      "rankings",
+      "partnership",
+      "TV screen",
+      "TV panel",
+      "Display fault",
+      "TV power failure",
+      "Internal TV component",
+      "Antenna",
+      "TV reception",
+      "Mobile phone screen",
+      "Mobile phone battery",
+      "Charging port",
+      "Water damage",
+      "Tablet screen",
+      "Soldering",
+      "Component-level electronics",
+      "Console hardware",
+      "PlayStation",
+      "Xbox",
+      "Nintendo",
+      "Appliance",
+      "Whiteware",
+      "Electrical wiring",
+      "General electronics",
+      "Manufacturer warranty service"
+    ],
+    urgentKeywords: [
+      "As soon as possible"
     ]
   }
 };
 
 /**
- * Retrieves the spreadsheet database instance
+ * Retrieves the spreadsheet database instance safely across Form-bound, Sheet-bound, or Webhook contexts
  */
 function getTargetSpreadsheet() {
+  try {
+    if (typeof CONFIG !== 'undefined' && CONFIG.SPREADSHEET_ID) {
+      return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    }
+  } catch (e) {
+    Logger.log("Could not open spreadsheet by ID, falling back to active spreadsheet: " + e.toString());
+  }
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 

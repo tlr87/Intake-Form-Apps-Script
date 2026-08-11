@@ -2,57 +2,128 @@
 <html>
 <head>
   <base target="_top">
+  <!-- JSONEditor CSS & JS CDN -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.2/jsoneditor.min.css" rel="stylesheet" type="text/css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.2/jsoneditor.min.js"></script>
+  
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f4f6f8; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    #jsoneditor { width: 100%; height: 520px; background: #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .btn { background: #0056b3; color: white; border: 0; padding: 10px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background: #003d80; }
-    #status { margin-top: 10px; font-weight: bold; }
-    .success { color: #2e7d32; }
-    .error { color: #c62828; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      margin: 20px; 
+      background: #f4f6f8; 
+      color: #1e293b;
+    }
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 16px; 
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: #0f172a;
+    }
+    #jsoneditor { 
+      width: 100%; 
+      height: 520px; 
+      background: #fff; 
+      border-radius: 6px; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+    }
+    .btn { 
+      background: #993333; 
+      color: white; 
+      border: 0; 
+      padding: 10px 20px; 
+      font-weight: 600; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: background 0.2s ease;
+    }
+    .btn:hover { 
+      background: #7a2828; 
+    }
+    #status { 
+      margin-top: 12px; 
+      font-weight: 600; 
+      font-size: 0.95rem;
+    }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    .loading { color: #2563eb; }
   </style>
 </head>
 <body>
+
   <div class="header">
     <h2>RD3 Tech - Keyword Taxonomy Editor</h2>
     <button class="btn" onclick="saveData()">Save Taxonomy</button>
   </div>
+
   <div id="jsoneditor"></div>
-  <div id="status">Loading configuration...</div>
+  <div id="status" class="loading">Loading configuration...</div>
 
   <script>
     const container = document.getElementById("jsoneditor");
-    const editor = new JSONEditor(container, { mode: 'tree', modes: ['tree', 'form', 'code'] });
+    const editor = new JSONEditor(container, { 
+      mode: 'tree', 
+      modes: ['tree', 'form', 'code'] 
+    });
 
+    // 1. Load Taxonomy on Page Load
     google.script.run
       .withSuccessHandler(dataStr => {
-        editor.set(JSON.parse(dataStr));
-        editor.expandAll();
-        document.getElementById('status').innerText = 'Ready';
+        try {
+          const parsedData = JSON.parse(dataStr);
+          editor.set(parsedData);
+          editor.expandAll();
+          
+          const statusDiv = document.getElementById('status');
+          statusDiv.innerText = 'Ready to edit.';
+          statusDiv.className = '';
+        } catch (e) {
+          showError('Failed to parse response: ' + e.message);
+        }
+      })
+      .withFailureHandler(err => {
+        showError('Apps Script error: ' + err.message);
       })
       .apiGetTaxonomy();
 
+    // 2. Save Taxonomy Data
     function saveData() {
       const statusDiv = document.getElementById('status');
-      statusDiv.className = '';
+      statusDiv.className = 'loading';
       statusDiv.innerText = 'Saving changes...';
       
       try {
-        const jsonStr = JSON.stringify(editor.get());
+        const currentData = editor.get();
+        const jsonStr = JSON.stringify(currentData);
+        
         google.script.run
           .withSuccessHandler(res => {
             statusDiv.innerText = res.message;
             statusDiv.className = res.success ? 'success' : 'error';
           })
+          .withFailureHandler(err => {
+            showError('Save failed: ' + err.message);
+          })
           .apiSaveTaxonomy(jsonStr);
+
       } catch (err) {
-        statusDiv.innerText = 'JSON Error: ' + err.message;
-        statusDiv.className = 'error';
+        showError('JSON Validation Error: ' + err.message);
       }
     }
+
+    function showError(msg) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerText = msg;
+      statusDiv.className = 'error';
+    }
   </script>
+
 </body>
 </html>
