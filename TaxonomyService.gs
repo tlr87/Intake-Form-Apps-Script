@@ -6,63 +6,23 @@ var TaxonomyService = (function () {
 
   var PROPERTY_KEY = 'KEYWORD_TAXONOMY_JSON';
 
-  var DEFAULT_TAXONOMY = {
-    spamKeywords: [
-      "casino",
-      "viagra",
-      "loans",
-      "invest",
-      "crypto loans",
-      "cheap credits"
-    ],
-    reviewKeywords: [
-      "crypto",
-      "seo",
-      "guest post",
-      "backlinks",
-      "rankings",
-      "partnership",
-      "TV screen",
-      "TV panel",
-      "Display fault",
-      "TV power failure",
-      "Internal TV component",
-      "Antenna",
-      "TV reception",
-      "Mobile phone screen",
-      "Mobile phone battery",
-      "Charging port",
-      "Water damage",
-      "Tablet screen",
-      "Soldering",
-      "Component-level electronics",
-      "Console hardware",
-      "PlayStation",
-      "Xbox",
-      "Nintendo",
-      "Appliance",
-      "Whiteware",
-      "Electrical wiring",
-      "General electronics",
-      "Manufacturer warranty service"
-    ]
-  };
-
   /**
    * Retrieves the stored taxonomy JSON object.
    * Initializes default configuration if none exists.
    */
   function getTaxonomy() {
     var stored = PropertiesService.getScriptProperties().getProperty(PROPERTY_KEY);
+
     if (!stored) {
-      saveTaxonomy(DEFAULT_TAXONOMY);
-      return DEFAULT_TAXONOMY;
+      saveTaxonomy(CONFIG.DEFAULT_TAXONOMY);
+      return CONFIG.DEFAULT_TAXONOMY;
     }
+
     try {
       return JSON.parse(stored);
     } catch (e) {
       Logger.log('Error parsing taxonomy JSON: ' + e.toString());
-      return DEFAULT_TAXONOMY;
+      return CONFIG.DEFAULT_TAXONOMY;
     }
   }
 
@@ -71,19 +31,23 @@ var TaxonomyService = (function () {
    * @param {Object|String} taxonomyObj
    */
   function saveTaxonomy(taxonomyObj) {
-    var jsonString = (typeof taxonomyObj === 'string') 
-      ? taxonomyObj 
+    var jsonString = (typeof taxonomyObj === 'string')
+      ? taxonomyObj
       : JSON.stringify(taxonomyObj);
-    
+
     // Validate string formatting before saving
     JSON.parse(jsonString);
-    PropertiesService.getScriptProperties().setProperty(PROPERTY_KEY, jsonString);
+
+    PropertiesService.getScriptProperties().setProperty(
+      PROPERTY_KEY,
+      jsonString
+    );
   }
 
   return {
     getTaxonomy: getTaxonomy,
     saveTaxonomy: saveTaxonomy,
-    DEFAULT_TAXONOMY: DEFAULT_TAXONOMY
+    DEFAULT_TAXONOMY: CONFIG.DEFAULT_TAXONOMY
   };
 
 })();
@@ -99,16 +63,29 @@ function apiGetTaxonomy() {
 function apiSaveTaxonomy(jsonStr) {
   try {
     TaxonomyService.saveTaxonomy(jsonStr);
-    return { success: true, message: 'Taxonomy saved successfully!' };
+
+    return {
+      success: true,
+      message: 'Taxonomy saved successfully!'
+    };
+
   } catch (err) {
-    return { success: false, message: 'Failed to save taxonomy: ' + err.toString() };
+    return {
+      success: false,
+      message: 'Failed to save taxonomy: ' + err.toString()
+    };
   }
 }
 
 /**
- * Overwrites stored PropertiesService taxonomy with the DEFAULT_TAXONOMY defined in code.
+ * Overwrites stored PropertiesService taxonomy with the
+ * DEFAULT_TAXONOMY defined in Config.gs.
  */
 function resetTaxonomyToDefault() {
-  TaxonomyService.saveTaxonomy(TaxonomyService.DEFAULT_TAXONOMY);
+  TaxonomyService.saveTaxonomy(
+    TaxonomyService.DEFAULT_TAXONOMY
+  );
+
   Logger.log("✅ Taxonomy storage successfully reset!");
 }
+

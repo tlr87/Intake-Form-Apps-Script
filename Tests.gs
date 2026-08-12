@@ -585,3 +585,198 @@ function runManualTest() {
   testTriggerLog(mockEvent);
   Logger.log("--- 🏁 MANUAL TEST COMPLETE ---");
 }
+
+
+
+
+
+
+/**
+ * ============================================================================
+ * TEST SHEET
+ * Creates/configures the Test sheet used for live request testing.
+ * ============================================================================
+ */
+function setupTestSheet() {
+  var ss = getTargetSpreadsheetInstance();
+
+  if (!ss) {
+    throw new Error("Could not locate the configured spreadsheet.");
+  }
+
+  var sheet = ss.getSheetByName("Test");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("Test");
+  }
+
+  var headers = [
+    "Timestamp",
+    "Name",
+    "Email",
+    "Phone",
+    "Address",
+    "I’m contacting RD3 Tech as",
+    "Subject / Category",
+    "What are you trying to achieve?",
+    "How soon do you need help?"
+  ];
+
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  /*
+   * Only Subject / Category is controlled by a dropdown.
+   * The other fields remain editable test data.
+   */
+  var categories = [
+    "Something Broken? — Fix a problem",
+    "Something Better? — Upgrade or improve",
+    "Need Advice? — Plan the right solution",
+    "Need Better Technology? — Improve how you work",
+    "Need Ongoing Support? — Someone to look after it",
+    "Not Sure? — Help me decide"
+  ];
+
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(categories, true)
+    .setAllowInvalid(false)
+    .build();
+
+  sheet.getRange("G2:G100").setDataValidation(rule);
+
+  /*
+   * Add a sample row only when the Test sheet has no data yet.
+   */
+  if (sheet.getLastRow() < 2) {
+    sheet.getRange(2, 1, 1, headers.length).setValues([[
+      new Date(),
+      "Douglas Adams",
+      "tom.revill@gmail.com",
+      "021 555 0042",
+      "Mill Road, Cambridge, Cambridgeshire, England",
+      "Home user",
+      "Something Broken? — Fix a problem",
+      "TV aerial needs tuning",
+      "As soon as possible"
+    ]]);
+  }
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, headers.length);
+
+  Logger.log("✅ Test sheet is ready.");
+}
+
+
+/**
+ * ============================================================================
+ * LIVE REQUEST TEST
+ *
+ * Reads row 2 from the Test sheet and sends it through the real
+ * EmailService.processSubmission() pipeline.
+ *
+ * This does NOT write to Form Responses.
+ *
+ * It DOES:
+ * - evaluate the request
+ * - use the live taxonomy
+ * - write to Submissions
+ * - send the real admin notification
+ * - send the real client confirmation
+ * ============================================================================
+ */
+function testLiveRequestFromTestSheet() {
+  var ss = getTargetSpreadsheetInstance();
+
+  if (!ss) {
+    throw new Error("Could not locate the configured spreadsheet.");
+  }
+
+  var sheet = ss.getSheetByName("Test");
+
+  if (!sheet) {
+    throw new Error(
+      "Test sheet not found. Run setupTestSheet() first."
+    );
+  }
+
+  if (sheet.getLastRow() < 2) {
+    throw new Error(
+      "The Test sheet does not contain a test request in row 2."
+    );
+  }
+
+  var lastColumn = sheet.getLastColumn();
+
+  var headers = sheet
+    .getRange(1, 1, 1, lastColumn)
+    .getValues()[0];
+
+  var values = sheet
+    .getRange(2, 1, 1, lastColumn)
+    .getValues()[0];
+
+  var testData = {};
+
+  for (var i = 0; i < headers.length; i++) {
+    var header = String(headers[i]).trim();
+
+    if (header) {
+      testData[header] = values[i];
+    }
+  }
+
+  /*
+   * Build the same field names that the production EmailService
+   * already understands.
+   */
+var payload = {
+  name: values[1] || "",
+  email: values[2] || "",
+  phone: values[3] || "",
+  address: values[4] || "",
+
+  userType: values[5] || "",
+
+  situation: values[6] || "",
+
+  achievement: values[7] || "",
+
+  timeframe: values[8] || "",
+
+  honeypot: ""
+};
+
+  Logger.log("==================================================");
+  Logger.log("🧪 LIVE REQUEST TEST");
+  Logger.log("==================================================");
+  Logger.log("Test payload:");
+  Logger.log(JSON.stringify(payload, null, 2));
+
+  /*
+   * IMPORTANT:
+   * Do not use the Test sheet timestamp.
+   *
+   * processSubmission() creates the real processing timestamp.
+   */
+
+  if (
+    typeof EmailService === "undefined" ||
+    typeof EmailService.processSubmission !== "function"
+  ) {
+    throw new Error(
+      "EmailService.processSubmission() is not available."
+    );
+  }
+
+  var result = EmailService.processSubmission(payload);
+
+  Logger.log("==================================================");
+  Logger.log("✅ LIVE REQUEST TEST COMPLETE");
+  Logger.log("==================================================");
+  Logger.log(JSON.stringify(result, null, 2));
+
+  return result;
+}
+
+
