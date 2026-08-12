@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>RD3 Tech - Snippets Reference Library</title>
+
     <style>
       body {
         margin: 0;
@@ -12,11 +13,13 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
         color: #1e293b;
       }
+
       .container {
         max-width: 900px;
         margin: 30px auto;
         padding: 0 20px 40px 20px;
       }
+
       .header {
         background-color: #993333;
         color: #ffffff;
@@ -26,11 +29,13 @@
         align-items: center;
         justify-content: space-between;
       }
+
       .header h1 {
         margin: 0;
         font-size: 22px;
         letter-spacing: 0.5px;
       }
+
       .back-btn {
         background: rgba(255, 255, 255, 0.2);
         color: #ffffff;
@@ -41,9 +46,11 @@
         font-weight: 600;
         transition: background 0.2s;
       }
+
       .back-btn:hover {
         background: rgba(255, 255, 255, 0.35);
       }
+
       .content-card {
         background: #ffffff;
         border: 1px solid #cbd5e1;
@@ -51,16 +58,19 @@
         border-radius: 0 0 8px 8px;
         padding: 30px;
       }
+
       .snippet-section {
         margin-bottom: 35px;
         padding-bottom: 25px;
         border-bottom: 1px solid #e2e8f0;
       }
+
       .snippet-section:last-child {
         margin-bottom: 0;
         padding-bottom: 0;
         border-bottom: none;
       }
+
       .badge {
         font-size: 12px;
         font-family: monospace;
@@ -70,32 +80,38 @@
         border-radius: 4px;
         font-weight: 600;
       }
+
       .badge-purple {
         background-color: #7c3aed;
       }
+
       .title-row {
         display: flex;
         align-items: center;
         gap: 12px;
         margin-bottom: 10px;
       }
+
       .title-row h2 {
         margin: 0;
         font-size: 18px;
         color: #0f172a;
       }
+
       .desc {
         font-size: 14px;
         color: #475569;
         line-height: 1.5;
         margin-bottom: 15px;
       }
+
       .code-container {
         position: relative;
         background-color: #0f172a;
         border-radius: 6px;
         overflow: hidden;
       }
+
       .code-header {
         background-color: #1e293b;
         color: #94a3b8;
@@ -107,6 +123,7 @@
         align-items: center;
         border-bottom: 1px solid #334155;
       }
+
       .copy-btn {
         background: #0284c7;
         color: #ffffff;
@@ -117,9 +134,11 @@
         font-weight: bold;
         cursor: pointer;
       }
+
       .copy-btn:hover {
         background: #0369a1;
       }
+
       pre {
         margin: 0;
         padding: 16px;
@@ -132,8 +151,11 @@
       }
     </style>
   </head>
+
   <body>
+
     <div class="container">
+
       <div class="header">
         <h1>📚 RD3 Snippets Technical Reference</h1>
         <a href="?page=Index" class="back-btn">← Back to Hub</a>
@@ -141,66 +163,93 @@
 
       <div class="content-card">
 
-        <!-- SECTION 1: Diagnostic Tester Shortcode -->
+        <!-- =========================================================
+             SECTION 1: Diagnostic Tester Shortcode
+             ========================================================= -->
+
         <div class="snippet-section">
+
           <div class="title-row">
             <h2>Diagnostic Web App Tester</h2>
             <span class="badge badge-purple">[rd3_test_submit]</span>
           </div>
+
           <div class="desc">
-            WordPress backend diagnostic tool that executes live <strong>GET</strong> and <strong>POST</strong> (JSON / Form Encoded) requests to the Google Apps Script deployment URL. Handles cURL redirects (`302 Moved Temporarily`) properly without losing POST data payload context.
+            WordPress backend diagnostic tool that executes live
+            <strong>GET</strong> and <strong>POST</strong> requests to the
+            Google Apps Script deployment URL. Handles cURL redirects
+            (<code>302 Moved Temporarily</code>) properly without losing
+            POST data payload context.
           </div>
+
           <div class="code-container">
+
             <div class="code-header">
               <span>functions.php / Code Snippets (PHP)</span>
-              <button class="copy-btn" onclick="copyCode('code-diag')">Copy Code</button>
+              <button class="copy-btn" onclick="copyCode('code-diag')">
+                Copy Code
+              </button>
             </div>
+
             <pre id="code-diag"><code>/**
- * RD3 Tech Web App Diagnostic Tester (Corrected Redirect Pipeline)
+ * RD3 Tech Web App Diagnostic Tester
  * Shortcode: [rd3_test_submit]
  */
 add_shortcode('rd3_test_submit', function() {
+
     $web_app_url = trim('https://script.google.com/macros/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/exec');
 
-    $run_test = isset($_POST['run_rd3_diag']) && check_admin_referer('rd3_diag_nonce');
+    $run_test = isset($_POST['run_rd3_diag']) &amp;&amp; check_admin_referer('rd3_diag_nonce');
 
     $test_data = array(
-        'hp_website'  => '',
-        'website_hp'  => '',
-        'name'        => 'Diagnostic Test Lead',
-        'email'       => 'test@example.com',
-        'phone'       => '021000000',
-        'address'     => '123 Test Street, Auckland',
-        'userType'    => 'Home user',
-        'situation'   => 'Something Broken? — Fix a problem',
-        'achievement' => 'Testing WordPress backend connection to Google Apps Script.',
-        'timeframe'   => 'As soon as possible'
+        'hp_website'  =&gt; '',
+        'website_hp'  =&gt; '',
+        'name'        =&gt; 'Diagnostic Test Lead',
+        'email'       =&gt; 'test@example.com',
+        'phone'       =&gt; '021000000',
+        'address'     =&gt; '123 Test Street, Auckland',
+        'userType'    =&gt; 'Home user',
+        'situation'   =&gt; 'Something Broken? — Fix a problem',
+        'achievement' =&gt; 'Testing WordPress backend connection to Google Apps Script.',
+        'timeframe'   =&gt; 'As soon as possible'
     );
 
     /**
      * Standard Google Apps Script Compatible Request Handler
      */
     $execute_gas_request = function($url, $method = 'GET', $body = null, $content_type = null) {
+
         if (!function_exists('curl_init')) {
-            return array('code' => 500, 'body' => 'PHP cURL extension is not enabled on this server.');
+            return array(
+                'code' =&gt; 500,
+                'body' =&gt; 'PHP cURL extension is not enabled on this server.'
+            );
         }
 
         $ch = curl_init();
+
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
         curl_setopt($ch, CURLOPT_TIMEOUT, 25);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RD3-Diagnostic-Client/1.0');
+        curl_setopt(
+            $ch,
+            CURLOPT_USERAGENT,
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RD3-Diagnostic-Client/1.0'
+        );
 
         $headers = array('Expect:');
 
         if ($method === 'POST') {
+
             curl_setopt($ch, CURLOPT_POST, true);
+
             if ($body !== null) {
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
             }
+
             if ($content_type) {
                 $headers[] = 'Content-Type: ' . $content_type;
             }
@@ -209,172 +258,826 @@ add_shortcode('rd3_test_submit', function() {
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response_body = curl_exec($ch);
-        $http_code     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curl_error    = curl_error($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+
         curl_close($ch);
 
         if ($curl_error) {
-            return array('code' => 0, 'body' => 'cURL Error: ' . $curl_error);
+            return array(
+                'code' =&gt; 0,
+                'body' =&gt; 'cURL Error: ' . $curl_error
+            );
         }
 
-        return array('code' => $http_code, 'body' => $response_body);
+        return array(
+            'code' =&gt; $http_code,
+            'body' =&gt; $response_body
+        );
     };
 
     ob_start();
+
     ?&gt;
+
     &lt;div style="background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; max-width: 750px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);"&gt;
+
         &lt;div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #334155; padding-bottom: 12px;"&gt;
-            &lt;h3 style="color: #38bdf8; margin: 0; font-size: 18px;"&gt;RD3 Apps Script Diagnostic Hub&lt;/h3&gt;
+
+            &lt;h3 style="color: #38bdf8; margin: 0; font-size: 18px;"&gt;
+                RD3 Apps Script Diagnostic Hub
+            &lt;/h3&gt;
+
             &lt;form method="post" style="margin: 0;"&gt;
+
                 &lt;?php wp_nonce_field('rd3_diag_nonce'); ?&gt;
+
                 &lt;input type="hidden" name="run_rd3_diag" value="1"&gt;
+
                 &lt;button type="submit" style="background: #0284c7; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;"&gt;
-                     Run Diagnostic Tests
+                    Run Diagnostic Tests
                 &lt;/button&gt;
+
             &lt;/form&gt;
+
         &lt;/div&gt;
 
         &lt;p style="background: #1e293b; padding: 10px 14px; border-radius: 6px; word-break: break-all; font-size: 13px; margin-top: 0;"&gt;
-            &lt;strong style="color: #94a3b8;"&gt;Target Endpoint:&lt;/strong&gt;&lt;br&gt;
-            &lt;code style="color: #38bdf8; font-size: 12px;"&gt;&lt;?php echo esc_html($web_app_url); ?&gt;&lt;/code&gt;
+
+            &lt;strong style="color: #94a3b8;"&gt;
+                Target Endpoint:
+            &lt;/strong&gt;
+
+            &lt;br&gt;
+
+            &lt;code style="color: #38bdf8; font-size: 12px;"&gt;
+                &lt;?php echo esc_html($web_app_url); ?&gt;
+            &lt;/code&gt;
+
         &lt;/p&gt;
 
         &lt;?php if (!$run_test) : ?&gt;
+
             &lt;p style="color: #94a3b8; font-size: 14px; text-align: center; margin: 30px 0;"&gt;
+
                 Click &lt;strong&gt;"Run Diagnostic Tests"&lt;/strong&gt; above to re-run the tests with correct redirect handling.
+
             &lt;/p&gt;
+
         &lt;?php else : 
-            $response_get = $execute_gas_request($web_app_url, 'GET');
+
+            $response_get = $execute_gas_request(
+                $web_app_url,
+                'GET'
+            );
 
             $response_json = $execute_gas_request(
-                $web_app_url, 
-                'POST', 
-                json_encode($test_data), 
+                $web_app_url,
+                'POST',
+                json_encode($test_data),
                 'text/plain;charset=utf-8'
             );
 
             $response_form = $execute_gas_request(
-                $web_app_url, 
-                'POST', 
-                http_build_query($test_data), 
+                $web_app_url,
+                'POST',
+                http_build_query($test_data),
                 'application/x-www-form-urlencoded'
             );
 
             $render_result = function($title, $res) {
-                echo '&lt;h4 style="color: #facc15; margin: 20px 0 8px 0; font-size: 15px;"&gt;' . esc_html($title) . '&lt;/h4&gt;';
+
+                echo '&lt;h4 style="color: #facc15; margin: 20px 0 8px 0; font-size: 15px;"&gt;'
+                    . esc_html($title)
+                    . '&lt;/h4&gt;';
 
                 $code = $res['code'];
                 $body = $res['body'];
 
-                $badge_color = ($code &gt;= 200 &amp;&amp; $code &lt; 300) ? '#22c55e' : (($code &gt;= 300 &amp;&amp; $code &lt; 400) ? '#eab308' : '#ef4444');
+                $badge_color =
+                    ($code &gt;= 200 &amp;&amp; $code &lt; 300)
+                    ? '#22c55e'
+                    : (($code &gt;= 300 &amp;&amp; $code &lt; 400)
+                        ? '#eab308'
+                        : '#ef4444');
 
                 $json_decoded = json_decode($body);
+
                 if (json_last_error() === JSON_ERROR_NONE) {
-                    $formatted_body = json_encode($json_decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+                    $formatted_body = json_encode(
+                        $json_decoded,
+                        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+                    );
+
                 } else {
+
                     $formatted_body = $body;
+
                 }
 
                 echo '&lt;div style="font-size: 13px; margin-bottom: 6px;"&gt;';
-                echo '&lt;strong&gt;HTTP Status Code:&lt;/strong&gt; &lt;span style="background: ' . $badge_color . '; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold;"&gt;' . esc_html($code) . '&lt;/span&gt;';
+
+                echo '&lt;strong&gt;HTTP Status Code:&lt;/strong&gt; '
+                    . '&lt;span style="background: '
+                    . $badge_color
+                    . '; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: bold;"&gt;'
+                    . esc_html($code)
+                    . '&lt;/span&gt;';
+
                 echo '&lt;/div&gt;';
 
-                echo '&lt;pre style="background: #1e293b; padding: 12px; border-radius: 6px; overflow-x: auto; color: #a7f3d0; font-size: 12px; margin: 0; max-height: 250px;"&gt;' . esc_html($formatted_body) . '&lt;/pre&gt;';
+                echo '&lt;pre style="background: #1e293b; padding: 12px; border-radius: 6px; overflow-x: auto; color: #a7f3d0; font-size: 12px; margin: 0; max-height: 250px;"&gt;'
+                    . esc_html($formatted_body)
+                    . '&lt;/pre&gt;';
             };
 
-            $render_result('1. GET Endpoint Reachability Test', $response_get);
-            $render_result('2. POST JSON Payload Test Results', $response_json);
-            $render_result('3. POST Form URL-Encoded Payload Test Results', $response_form);
+            $render_result(
+                '1. GET Endpoint Reachability Test',
+                $response_get
+            );
+
+            $render_result(
+                '2. POST JSON Payload Test Results',
+                $response_json
+            );
+
+            $render_result(
+                '3. POST Form URL-Encoded Payload Test Results',
+                $response_form
+            );
 
         endif; ?&gt;
+
     &lt;/div&gt;
+
     &lt;?php
+
     return ob_get_clean();
+
 });</code></pre>
+
           </div>
         </div>
 
-        <!-- SECTION 2: Contact Form Shortcode -->
+
+        <!-- =========================================================
+             SECTION 2: Contact Form Shortcode
+             ========================================================= -->
+
         <div class="snippet-section">
+
           <div class="title-row">
             <h2>Contact Form Integration</h2>
             <span class="badge">[rd3_contact_form]</span>
           </div>
-          <div class="desc">
-            Embeds a frontend panel that Posts general client requests directly into Google Forms using hidden target iframe mechanics.
-          </div>
-          <div class="code-container">
-            <div class="code-header">
-              <span>functions.php / Code Snippets (PHP)</span>
-              <button class="copy-btn" onclick="copyCode('code-contact')">Copy Code</button>
-            </div>
-            <pre id="code-contact"><code>add_shortcode('rd3_contact_form', function() {
-    ob_start();
-    ?&gt;
-    &lt;iframe name="gform_target" id="gform_target" style="display:none;"&gt;&lt;/iframe&gt;
-    &lt;form action="https://docs.google.com/forms/d/e/1FAIpQLSdDhq-B8voXkJHZkSz5TOgF3R-LvRqwBW5TK2LW2DnjR1QJ0w/formResponse" method="POST" target="gform_target"&gt;
-        &lt;input type="text" name="entry.1576532276" placeholder="Your Name" required /&gt;
-        &lt;input type="email" name="entry.817428911" placeholder="Your Email" required /&gt;
-        &lt;button type="submit"&gt;Submit Request&lt;/button&gt;
-    &lt;/form&gt;
-    &lt;?php
-    return ob_get_clean();
-});</code></pre>
-          </div>
-        </div>
 
-        <!-- SECTION 3: Lead Form Shortcode -->
-        <div class="snippet-section">
-          <div class="title-row">
-            <h2>Lead Capture Form (Async API)</h2>
-            <span class="badge">[rd3_lead_form]</span>
-          </div>
           <div class="desc">
-            Asynchronous JavaScript lead form pushing structured data to the Google Apps Script Web App Endpoint.
+            Embeds the RD3 Tech contact form into WordPress and submits
+            enquiries directly to the connected Google Form using a hidden
+            target iframe. The form includes client details, preferred
+            contact method, previous RD3 Tech usage, enquiry category,
+            situation, desired outcome, and timeframe.
           </div>
+
           <div class="code-container">
+
             <div class="code-header">
               <span>functions.php / Code Snippets (PHP)</span>
-              <button class="copy-btn" onclick="copyCode('code-lead')">Copy Code</button>
+
+              <button class="copy-btn" onclick="copyCode('code-contact')">
+                Copy Code
+              </button>
             </div>
-            <pre id="code-lead"><code>add_shortcode('rd3_lead_form', function() {
+
+            <pre id="code-contact"><code>/**
+ * RD3 Tech Contact Form Shortcode (Google Forms Integration)
+ * Shortcode: [rd3_contact_form]
+ */
+add_shortcode('rd3_contact_form', function() {
+
+    $form_action_url = 'https://docs.google.com/forms/d/e/1FAIpQLSdDhq-B8voXkJHZkSz5TOgF3R-LvRqwBW5TK2LW2DnjR1QJ0w/formResponse';
+
     ob_start();
+
     ?&gt;
-    &lt;form id="rd3-async-lead-form"&gt;
-        &lt;input type="text" id="lead_name" placeholder="Full Name" required /&gt;
-        &lt;input type="tel" id="lead_phone" placeholder="Phone Number" required /&gt;
-        &lt;button type="button" onclick="submitRd3Lead()"&gt;Submit Lead&lt;/button&gt;
-    &lt;/form&gt;
-    &lt;script&gt;
-      function submitRd3Lead() {
-        const payload = {
-          name: document.getElementById('lead_name').value,
-          phone: document.getElementById('lead_phone').value
-        };
-        fetch('https://script.google.com/macros/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/exec', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        }).then(() =&gt; alert('Lead submitted!'));
+
+    &lt;style&gt;
+
+      .rd3-form-container {
+        max-width: 620px;
+        margin: 20px auto;
+        padding: 30px;
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: #1e293b;
+        box-sizing: border-box;
       }
+
+      .rd3-form-header {
+        margin-bottom: 25px;
+        border-bottom: 2px solid #CADFEC;
+        padding-bottom: 15px;
+      }
+
+      .rd3-form-header h2 {
+        margin: 0 0 6px 0;
+        color: #993333;
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+
+      .rd3-tagline {
+        font-weight: 600;
+        color: #993333;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+      }
+
+      .rd3-form-header p {
+        margin: 0;
+        color: #475569;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .rd3-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 25px;
+        margin-bottom: 14px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #CADFEC;
+        color: #993333;
+      }
+
+      .rd3-form-group {
+        margin-bottom: 18px;
+      }
+
+      .rd3-form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1e293b;
+      }
+
+      .rd3-form-group label .required {
+        color: #993333;
+      }
+
+      .rd3-form-group input[type="text"],
+      .rd3-form-group input[type="email"],
+      .rd3-form-group input[type="tel"],
+      .rd3-form-group select,
+      .rd3-form-group textarea {
+        width: 100% !important;
+        padding: 10px 12px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        font-size: 0.95rem !important;
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        box-sizing: border-box !important;
+        transition: all 0.2s ease !important;
+      }
+
+      .rd3-form-group input:focus,
+      .rd3-form-group select:focus,
+      .rd3-form-group textarea:focus {
+        border-color: #993333 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 3px rgba(153, 51, 51, 0.15) !important;
+        outline: none !important;
+      }
+
+      .rd3-help-text {
+        font-size: 0.825rem;
+        color: #64748b;
+        margin-top: 4px;
+      }
+
+      .rd3-submit-btn {
+        background-color: #993333 !important;
+        color: #ffffff !important;
+        padding: 12px 24px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+        transition: background-color 0.2s ease !important;
+      }
+
+      .rd3-submit-btn:hover {
+        background-color: #7a2828 !important;
+      }
+
+      .rd3-submit-btn:disabled {
+        background-color: #166534 !important;
+        opacity: 1 !important;
+        cursor: not-allowed !important;
+      }
+
+      .rd3-thankyou-msg {
+        display: none;
+        margin-top: 20px;
+        padding: 15px 20px;
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 6px;
+        color: #166534;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .rd3-hp-field {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+      }
+
+    &lt;/style&gt;
+
+
+    &lt;div class="rd3-form-container"&gt;
+
+      &lt;div class="rd3-form-header"&gt;
+
+        &lt;h2&gt;
+          RD3 TECH — CONTACT FORM
+        &lt;/h2&gt;
+
+        &lt;div class="rd3-tagline"&gt;
+          Understand → Recommend → Solve → Support
+        &lt;/div&gt;
+
+        &lt;p&gt;
+          Need help with your technology? Tell us what you are trying to achieve and we’ll help you find the right solution.
+        &lt;/p&gt;
+
+      &lt;/div&gt;
+
+
+      &lt;iframe
+        name="rd3_gform_target"
+        id="rd3_gform_target"
+        style="display:none;"
+      &gt;&lt;/iframe&gt;
+
+
+      &lt;form
+        id="rd3ContactForm"
+        action="&lt;?php echo esc_url($form_action_url); ?&gt;"
+        method="POST"
+        target="rd3_gform_target"
+      &gt;
+
+
+        &lt;!-- Honeypot anti-spam field --&gt;
+
+        &lt;div class="rd3-hp-field"&gt;
+
+          &lt;label for="rd3_hp_website"&gt;
+            Leave empty
+          &lt;/label&gt;
+
+          &lt;input
+            type="text"
+            id="rd3_hp_website"
+            name="website_hp"
+            tabindex="-1"
+            autocomplete="new-password"
+          &gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-section-title"&gt;
+          Your Details
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_name"&gt;
+            Name &lt;span class="required"&gt;*&lt;/span&gt;
+          &lt;/label&gt;
+
+          &lt;input
+            type="text"
+            id="rd3_name"
+            name="entry.1576532276"
+            required
+          &gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_email"&gt;
+            Email &lt;span class="required"&gt;*&lt;/span&gt;
+          &lt;/label&gt;
+
+          &lt;input
+            type="email"
+            id="rd3_email"
+            name="entry.817428911"
+            required
+          &gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_phone"&gt;
+            Phone
+          &lt;/label&gt;
+
+          &lt;input
+            type="tel"
+            id="rd3_phone"
+            name="entry.1285532466"
+          &gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_address"&gt;
+            Address / Location
+          &lt;/label&gt;
+
+          &lt;input
+            type="text"
+            id="rd3_address"
+            name="entry.1293794731"
+            placeholder="Street address, city, or general location"
+          &gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_preferred_contact"&gt;
+            Preferred Contact
+          &lt;/label&gt;
+
+          &lt;select
+            id="rd3_preferred_contact"
+            name="entry.PREFERRED_CONTACT"
+          &gt;
+
+            &lt;option value="" disabled selected&gt;
+              Select option...
+            &lt;/option&gt;
+
+            &lt;option value="Phone"&gt;
+              Phone
+            &lt;/option&gt;
+
+            &lt;option value="Email"&gt;
+              Email
+            &lt;/option&gt;
+
+            &lt;option value="SMS"&gt;
+              SMS
+            &lt;/option&gt;
+
+            &lt;option value="Either"&gt;
+              Either
+            &lt;/option&gt;
+
+          &lt;/select&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_userType"&gt;
+            I am contacting RD3 Tech as:
+            &lt;span class="required"&gt;*&lt;/span&gt;
+          &lt;/label&gt;
+
+          &lt;select
+            id="rd3_userType"
+            name="entry.343301224"
+            required
+          &gt;
+
+            &lt;option value="" disabled selected&gt;
+              Select option...
+            &lt;/option&gt;
+
+            &lt;option value="Home user"&gt;
+              Home user
+            &lt;/option&gt;
+
+            &lt;option value="Small business"&gt;
+              Small business
+            &lt;/option&gt;
+
+            &lt;option value="Community organisation"&gt;
+              Community organisation
+            &lt;/option&gt;
+
+            &lt;option value="Other"&gt;
+              Other
+            &lt;/option&gt;
+
+          &lt;/select&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_used_before"&gt;
+            Have you used RD3 Tech before?
+          &lt;/label&gt;
+
+          &lt;select
+            id="rd3_used_before"
+            name="entry.RD3_USED_BEFORE"
+          &gt;
+
+            &lt;option value="" disabled selected&gt;
+              Select option...
+            &lt;/option&gt;
+
+            &lt;option value="Yes"&gt;
+              Yes
+            &lt;/option&gt;
+
+            &lt;option value="No"&gt;
+              No
+            &lt;/option&gt;
+
+            &lt;option value="Not sure"&gt;
+              Not sure
+            &lt;/option&gt;
+
+          &lt;/select&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-section-title"&gt;
+          How Can We Help?
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_situation"&gt;
+            What sounds like your situation?
+            &lt;span class="required"&gt;*&lt;/span&gt;
+          &lt;/label&gt;
+
+          &lt;select
+            id="rd3_situation"
+            name="entry.650060968"
+            required
+          &gt;
+
+            &lt;option value="" disabled selected&gt;
+              Select situation...
+            &lt;/option&gt;
+
+            &lt;option value="Something Broken? — Fix a problem"&gt;
+              Something Broken? — Fix a problem
+            &lt;/option&gt;
+
+            &lt;option value="Something Better? — Upgrade or improve"&gt;
+              Something Better? — Upgrade or improve
+            &lt;/option&gt;
+
+            &lt;option value="Need Advice? — Plan the right solution"&gt;
+              Need Advice? — Plan the right solution
+            &lt;/option&gt;
+
+            &lt;option value="Need Better Technology? — Improve how you work"&gt;
+              Need Better Technology? — Improve how you work
+            &lt;/option&gt;
+
+            &lt;option value="Need Ongoing Support? — Someone to look after it"&gt;
+              Need Ongoing Support? — Someone to look after it
+            &lt;/option&gt;
+
+            &lt;option value="Not Sure? — Help me decide"&gt;
+              Not Sure? — Help me decide
+            &lt;/option&gt;
+
+          &lt;/select&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_achievement"&gt;
+            What Are You Trying To Achieve?
+          &lt;/label&gt;
+
+          &lt;textarea
+            id="rd3_achievement"
+            name="entry.483026621"
+            rows="4"
+            placeholder="Describe what you need fixed, installed, or improved..."
+          &gt;&lt;/textarea&gt;
+
+          &lt;div class="rd3-help-text"&gt;
+            Tell us what you would like to achieve or what outcome you are looking for.
+          &lt;/div&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;div class="rd3-form-group"&gt;
+
+          &lt;label for="rd3_timeframe"&gt;
+            How Soon Do You Need Help?
+          &lt;/label&gt;
+
+          &lt;select
+            id="rd3_timeframe"
+            name="entry.1883892334"
+          &gt;
+
+            &lt;option value="" disabled selected&gt;
+              Select timeframe...
+            &lt;/option&gt;
+
+            &lt;option value="As soon as possible"&gt;
+              As soon as possible
+            &lt;/option&gt;
+
+            &lt;option value="Within the next few weeks"&gt;
+              Within the next few weeks
+            &lt;/option&gt;
+
+            &lt;option value="Planning ahead"&gt;
+              Planning ahead
+            &lt;/option&gt;
+
+          &lt;/select&gt;
+
+        &lt;/div&gt;
+
+
+        &lt;button
+          type="submit"
+          id="rd3SubmitBtn"
+          class="rd3-submit-btn"
+        &gt;
+          Submit Enquiry
+        &lt;/button&gt;
+
+
+        &lt;div
+          id="rd3ThankYouMsg"
+          class="rd3-thankyou-msg"
+        &gt;
+
+          &lt;strong&gt;
+            Thank you for contacting RD3 Tech.
+          &lt;/strong&gt;
+
+          &lt;br&gt;
+
+          We will review your request and get back to you with the next steps.
+
+        &lt;/div&gt;
+
+
+      &lt;/form&gt;
+
+    &lt;/div&gt;
+
+
+    &lt;script type="text/javascript"&gt;
+
+      document.addEventListener('DOMContentLoaded', function() {
+
+        var form = document.getElementById('rd3ContactForm');
+        var iframe = document.getElementById('rd3_gform_target');
+        var btn = document.getElementById('rd3SubmitBtn');
+        var thankYou = document.getElementById('rd3ThankYouMsg');
+        var achievementTextarea = document.getElementById('rd3_achievement');
+
+        var submitted = false;
+
+
+        if (form) {
+
+          form.addEventListener('submit', function() {
+
+            var hpVal =
+              document.getElementById('rd3_hp_website').value;
+
+
+            if (hpVal) {
+
+              btn.disabled = true;
+              btn.innerText = "Submitted!";
+              thankYou.style.display = 'block';
+
+              form.reset();
+
+              return false;
+            }
+
+
+            // Fallback safety to ensure Google Form entry ID
+            // is always set on the textarea.
+
+            if (
+              achievementTextarea &&
+              !achievementTextarea.getAttribute('name')
+            ) {
+
+              achievementTextarea.setAttribute(
+                'name',
+                'entry.483026621'
+              );
+
+            }
+
+
+            btn.disabled = true;
+            btn.innerText = "Submitting!";
+
+            submitted = true;
+
+          });
+
+
+          iframe.addEventListener('load', function() {
+
+            if (submitted) {
+
+              btn.innerText = "Submitted!";
+
+              thankYou.style.display = 'block';
+
+              form.reset();
+
+              submitted = false;
+
+            }
+
+          });
+
+        }
+
+      });
+
     &lt;/script&gt;
+
+
     &lt;?php
+
     return ob_get_clean();
+
 });</code></pre>
+
           </div>
         </div>
 
       </div>
     </div>
 
+
     <script>
       function copyCode(id) {
-        const codeText = document.getElementById(id).innerText;
+
+        const codeText =
+          document.getElementById(id).innerText;
+
         navigator.clipboard.writeText(codeText).then(() => {
+
           alert('Snippet copied to clipboard!');
+
         });
+
       }
     </script>
+
   </body>
 </html>
+```
