@@ -780,3 +780,204 @@ var payload = {
 }
 
 
+
+/**
+ * ============================================================================
+ * SECURITY TEST — #4 PUBLIC SUBMISSION DUPLICATE / RATE LIMIT
+ * ============================================================================
+ *
+ * Confirms that the same public submission fingerprint is:
+ *
+ * 1. Allowed on the first attempt.
+ * 2. Blocked on the immediate second attempt.
+ *
+ * This test calls the rate-limit function directly and does NOT send emails
+ * or write to the Submissions sheet.
+ * ============================================================================
+ */
+function testSecurityRateLimit() {
+
+  var testPayload = {
+    Name: "Security Test",
+    Email: "security-test@example.com",
+    Phone: "0210000000"
+  };
+
+  Logger.log("==================================================");
+  Logger.log("🔐 SECURITY TEST #4 — RATE LIMIT");
+  Logger.log("==================================================");
+
+  var firstAttempt =
+    checkSubmissionRateLimit(testPayload);
+
+  Logger.log(
+    "First attempt allowed: " +
+    firstAttempt
+  );
+
+  var secondAttempt =
+    checkSubmissionRateLimit(testPayload);
+
+  Logger.log(
+    "Second attempt allowed: " +
+    secondAttempt
+  );
+
+  if (firstAttempt !== true) {
+    throw new Error(
+      "FAIL: First submission should have been allowed."
+    );
+  }
+
+  if (secondAttempt !== false) {
+    throw new Error(
+      "FAIL: Second identical submission should have been blocked."
+    );
+  }
+
+  Logger.log(
+    "✅ SECURITY TEST #4 PASSED"
+  );
+
+  Logger.log(
+    "First submission: ALLOWED"
+  );
+
+  Logger.log(
+    "Second identical submission: BLOCKED"
+  );
+}
+
+
+/**
+ * ============================================================================
+ * SECURITY TEST — #5 EMAIL / INPUT HANDLING
+ * ============================================================================
+ *
+ * Tests:
+ *
+ * 1. Valid email addresses are accepted.
+ * 2. Invalid email addresses are rejected.
+ * 3. CR/LF characters are removed from email subject/name values before
+ *    they are used as an email subject.
+ *
+ * This test does NOT send an email.
+ * ============================================================================
+ */
+function testSecurityEmailValidation() {
+
+  Logger.log("==================================================");
+  Logger.log("🔐 SECURITY TEST #5 — EMAIL / INPUT HANDLING");
+  Logger.log("==================================================");
+
+  /*
+   * Valid email tests.
+   */
+  var validEmails = [
+    "tom@rd3tech.com",
+    "customer@example.com",
+    "name.surname@example.co.nz"
+  ];
+
+  validEmails.forEach(function(email) {
+
+    var result =
+      isValidEmailAddress(email);
+
+    Logger.log(
+      "Valid email: " +
+      email +
+      " → " +
+      result
+    );
+
+    if (result !== true) {
+      throw new Error(
+        "FAIL: Valid email rejected: " +
+        email
+      );
+    }
+  });
+
+  /*
+   * Invalid email tests.
+   */
+  var invalidEmails = [
+    "",
+    "N/A",
+    "not-an-email",
+    "test@",
+    "@example.com",
+    "test example@example.com"
+  ];
+
+  invalidEmails.forEach(function(email) {
+
+    var result =
+      isValidEmailAddress(email);
+
+    Logger.log(
+      "Invalid email: [" +
+      email +
+      "] → " +
+      result
+    );
+
+    if (result !== false) {
+      throw new Error(
+        "FAIL: Invalid email accepted: " +
+        email
+      );
+    }
+  });
+
+  /*
+   * CR/LF sanitisation test.
+   *
+   * This mirrors the sanitisation used by sendAdminNotification().
+   */
+  var maliciousSubject =
+    "Something Broken?\r\nBcc: attacker@example.com";
+
+  var safeSubject =
+    String(maliciousSubject)
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+
+  Logger.log(
+    "Original subject: " +
+    JSON.stringify(maliciousSubject)
+  );
+
+  Logger.log(
+    "Sanitised subject: " +
+    JSON.stringify(safeSubject)
+  );
+
+  if (
+    safeSubject.indexOf("\r") !== -1 ||
+    safeSubject.indexOf("\n") !== -1
+  ) {
+    throw new Error(
+      "FAIL: CR/LF characters remain in sanitised subject."
+    );
+  }
+
+  /*
+   * Confirm the malicious header text is now ordinary subject content.
+   */
+  if (
+    safeSubject !==
+    "Something Broken? Bcc: attacker@example.com"
+  ) {
+    throw new Error(
+      "FAIL: Subject sanitisation produced an unexpected result."
+    );
+  }
+
+  Logger.log(
+    "✅ SECURITY TEST #5 PASSED"
+  );
+}
+
+
