@@ -26,6 +26,8 @@ var TaxonomyService = (function () {
     }
   }
 
+
+
   /**
    * Saves new taxonomy JSON to ScriptProperties.
    * @param {Object|String} taxonomyObj

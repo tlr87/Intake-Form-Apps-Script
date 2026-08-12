@@ -3,6 +3,7 @@
  */
 const CONFIG = {
   ADMIN_EMAIL: "tom@rd3tech.com",
+  ADMIN_USERS: ["tom@rd3tech.com"],
   COMPANY_NAME: "RD3 Tech",
   SENDER_NAME: "RD3 Tech",
   SPREADSHEET_ID: "1FNzJIm_njbU9d9Rv_dfJe9ChzG8f6ICJOF6bIAxrLUY",

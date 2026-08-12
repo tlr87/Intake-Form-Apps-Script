@@ -1,6 +1,43 @@
 /**
  * EmailService.gs - Lead Ingestion & Processing Engine for RD3 Tech
  */
+/**
+ * ============================================================================
+ * LEGACY / RETIRED TAXONOMY FUNCTIONS
+ * ============================================================================
+ *
+ * The functions below belong to the previous keyword/category system.
+ *
+ * They are NOT part of the current live taxonomy workflow.
+ *
+ * Current active taxonomy:
+ *
+ *   Config.gs
+ *        ↓
+ *   CONFIG.DEFAULT_TAXONOMY
+ *        ↓
+ *   TaxonomyService
+ *        ↓
+ *   KEYWORD_TAXONOMY_JSON
+ *        ↓
+ *   evaluateSubmission()
+ *
+ * The current taxonomy manages:
+ *   - spamKeywords
+ *   - reviewKeywords
+ *   - urgentKeywords
+ *
+ * The older KEYWORD_TAXONOMY category system and Flagged sheet logic
+ * are retained temporarily for legacy compatibility only.
+ *
+ * DO NOT add new keyword filtering logic here.
+ *
+ * These functions may be removed once the project has been checked to
+ * confirm that no other legacy code still depends on them.
+ * ============================================================================
+ */
+
+
 
 var EmailService = {
   doPost: doPost,
@@ -223,6 +260,7 @@ function normalizeInputKeys(rawData) {
   return map;
 }
 
+
 function evaluateSubmission(rawData, map) {
   var flagReasons = [];
   var spamScore = 0;
@@ -230,140 +268,431 @@ function evaluateSubmission(rawData, map) {
   var isReviewRequired = false;
   var isUrgent = false;
 
+  /**
+   * ============================================================================
+   * TAXONOMY LOADING
+   * ============================================================================
+   *
+   * Live taxonomy:
+   *     Script Properties → KEYWORD_TAXONOMY_JSON
+   *
+   * The live taxonomy is retrieved through:
+   *     TaxonomyService.getTaxonomy()
+   *
+   * If a live taxonomy category is unavailable or empty, that category
+   * falls back to the corresponding category in:
+   *     CONFIG.DEFAULT_TAXONOMY
+   *
+   * This keeps Config.gs as the single source of default taxonomy values
+   * while allowing the Taxonomy Editor to control the live taxonomy.
+   * ============================================================================
+   */
+
+  var taxonomy = {};
+
+  if (
+    typeof TaxonomyService !== 'undefined' &&
+    typeof TaxonomyService.getTaxonomy === 'function'
+  ) {
+    taxonomy = TaxonomyService.getTaxonomy() || {};
+  }
+
+  var spamKeywords =
+    (taxonomy.spamKeywords && taxonomy.spamKeywords.length)
+      ? taxonomy.spamKeywords
+      : CONFIG.DEFAULT_TAXONOMY.spamKeywords;
+
+  var reviewKeywords =
+    (taxonomy.reviewKeywords && taxonomy.reviewKeywords.length)
+      ? taxonomy.reviewKeywords
+      : CONFIG.DEFAULT_TAXONOMY.reviewKeywords;
+
+  var urgentKeywords =
+    (taxonomy.urgentKeywords && taxonomy.urgentKeywords.length)
+      ? taxonomy.urgentKeywords
+      : CONFIG.DEFAULT_TAXONOMY.urgentKeywords;
+
+  /**
+   * ============================================================================
+   * INPUT EXTRACTION
+   * ============================================================================
+   */
+
   function extractValue(keys) {
     for (var i = 0; i < keys.length; i++) {
       var k = keys[i];
-      if (rawData && rawData[k] !== undefined && rawData[k] !== null && String(rawData[k]).trim() !== '') {
+
+      if (
+        rawData &&
+        rawData[k] !== undefined &&
+        rawData[k] !== null &&
+        String(rawData[k]).trim() !== ''
+      ) {
         var v = rawData[k];
-        return Array.isArray(v) ? v.join(" ").trim() : String(v).trim();
+
+        return Array.isArray(v)
+          ? v.join(" ").trim()
+          : String(v).trim();
       }
     }
+
     for (var j = 0; j < keys.length; j++) {
-      var cleanK = keys[j].toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
-      if (map && map[cleanK] !== undefined && map[cleanK] !== null && String(map[cleanK]).trim() !== '') {
+      var cleanK = keys[j]
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "");
+
+      if (
+        map &&
+        map[cleanK] !== undefined &&
+        map[cleanK] !== null &&
+        String(map[cleanK]).trim() !== ''
+      ) {
         return String(map[cleanK]).trim();
       }
     }
+
     return "";
   }
 
   var goalText = extractValue([
-    'entry.483026621', 'entry_483026621',
-    'entry.1883892334', 'entry_1883892334', 
-    'what_are_you_trying_to_achieve', 'What Are You Trying To Achieve?', 
-    'achievement', 'message', 'goal', 'details', 'desired_outcome'
+    'entry.483026621',
+    'entry_483026621',
+    'what_are_you_trying_to_achieve',
+    'What Are You Trying To Achieve?',
+    'What are you trying to achieve?',
+    'achievement',
+    'message',
+    'goal',
+    'details',
+    'desired_outcome'
   ]);
 
   var timeframeText = extractValue([
-    'entry.1883892334', 'entry_1883892334',
-    'entry.483026621', 'entry_483026621', 
-    'how_soon_do_you_need_help', 'How Soon Do You Need Help?', 
-    'timeframe', 'urgency', 'timeline'
+    'entry.1883892334',
+    'entry_1883892334',
+    'how_soon_do_you_need_help',
+    'How Soon Do You Need Help?',
+    'How soon do you need help?',
+    'timeframe',
+    'urgency',
+    'timeline'
   ]);
 
-  // 1. Honeypot Check
-  var hpField = (typeof CONFIG !== 'undefined' && CONFIG.HONEYPOT_FIELD) ? CONFIG.HONEYPOT_FIELD.toLowerCase() : "website";
-  if ((map[hpField] && map[hpField] !== "") || map['honeypot'] || map['website_url_hp']) {
+  /**
+   * ============================================================================
+   * 1. HONEYPOT CHECK
+   * ============================================================================
+   */
+
+  var hpField =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.HONEYPOT_FIELD
+    )
+      ? CONFIG.HONEYPOT_FIELD.toLowerCase()
+      : "website";
+
+  if (
+    (map[hpField] && map[hpField] !== "") ||
+    map['honeypot'] ||
+    map['website_url_hp']
+  ) {
     isSpam = true;
     spamScore += 5;
-    flagReasons.push("Honeypot field filled ('" + hpField + "')");
+
+    flagReasons.push(
+      "Honeypot field filled ('" + hpField + "')"
+    );
   }
 
-  // 2. Review Keywords Evaluation (Fixed for short terms like "TV")
-  var reviewKeywords = getFlaggedKeywords();
-  
-  // Always enforce "tv" in the keyword check list
-  if (reviewKeywords.indexOf("tv") === -1 && reviewKeywords.indexOf("TV") === -1) {
-    reviewKeywords.unshift("tv");
-  }
+  /**
+   * ============================================================================
+   * 2. REVIEW KEYWORD EVALUATION
+   * ============================================================================
+   *
+   * Short keywords (3 characters or fewer):
+   *     Whole-word matching.
+   *
+   * Longer keywords:
+   *     Phrase/substring matching with simple word-stem support.
+   *
+   * All matches are retained.
+   * ============================================================================
+   */
 
   var goalLower = goalText.toLowerCase();
   var goalMatches = [];
 
   if (goalLower.length > 0) {
+
     for (var g = 0; g < reviewKeywords.length; g++) {
-      var rawKw = reviewKeywords[g].toString().toLowerCase().trim();
-      if (!rawKw) continue;
+
+      var rawKw = reviewKeywords[g]
+        .toString()
+        .toLowerCase()
+        .trim();
+
+      if (!rawKw) {
+        continue;
+      }
 
       var isMatched = false;
 
-      // Handle short terms (e.g. "tv", "seo") with regex word boundaries
       if (rawKw.length <= 3) {
-        var rx = new RegExp('(^|[^a-z0-9])' + rawKw + '($|[^a-z0-9])', 'i');
+
+        var rx = new RegExp(
+          '(^|[^a-z0-9])' +
+          rawKw +
+          '($|[^a-z0-9])',
+          'i'
+        );
+
         if (rx.test(goalLower)) {
           isMatched = true;
         }
+
       } else {
-        var stemKw = rawKw.replace(/(ing|ers?|ed|es?)$/i, "");
-        if (goalLower.indexOf(rawKw) !== -1 || (stemKw.length >= 3 && goalLower.indexOf(stemKw) !== -1)) {
+
+        var stemKw = rawKw.replace(
+          /(ing|ers?|ed|es?)$/i,
+          ""
+        );
+
+        if (
+          goalLower.indexOf(rawKw) !== -1 ||
+          (
+            stemKw.length >= 3 &&
+            goalLower.indexOf(stemKw) !== -1
+          )
+        ) {
           isMatched = true;
         }
       }
 
-      if (isMatched && goalMatches.indexOf(rawKw) === -1) {
+      if (
+        isMatched &&
+        goalMatches.indexOf(rawKw) === -1
+      ) {
         goalMatches.push(rawKw);
       }
     }
+  }
 
-    if (goalMatches.length > 0) {
-      isReviewRequired = true;
-      flagReasons.push("Goal / Desired Outcome matched review keyword(s): " + goalMatches.join(", "));
+  if (goalMatches.length > 0) {
+
+    isReviewRequired = true;
+
+    flagReasons.push(
+      "Goal / Desired Outcome matched review keyword(s): " +
+      goalMatches.join(", ")
+    );
+  }
+
+  /**
+   * ============================================================================
+   * 3. SPAM KEYWORD EVALUATION
+   * ============================================================================
+   *
+   * Spam keywords come from the live taxonomy first, with
+   * CONFIG.DEFAULT_TAXONOMY.spamKeywords as the fallback.
+   * ============================================================================
+   */
+
+  var combinedKeywordText = (
+    goalText + " " +
+    timeframeText + " " +
+    Object.keys(map || {}).map(function (key) {
+      return map[key];
+    }).join(" ")
+  ).toLowerCase();
+
+  var spamMatches = [];
+
+  for (var s = 0; s < spamKeywords.length; s++) {
+
+    var spamTerm = spamKeywords[s]
+      .toString()
+      .toLowerCase()
+      .trim();
+
+    if (!spamTerm) {
+      continue;
+    }
+
+    if (
+      combinedKeywordText.indexOf(spamTerm) !== -1 &&
+      spamMatches.indexOf(spamTerm) === -1
+    ) {
+      spamMatches.push(spamTerm);
     }
   }
 
-  // 3. Timeframe Urgency Check
-  var urgentKeywords = ['asap', 'as soon as possible', 'urgent', 'urgently', 'immediately', 'critical', 'emergency', 'right away', 'today', '24 hours', 'soon'];
+  if (spamMatches.length > 0) {
+
+    spamScore += spamMatches.length * 30;
+
+    flagReasons.push(
+      "Spam keyword(s) matched: " +
+      spamMatches.join(", ")
+    );
+  }
+
+  /**
+   * ============================================================================
+   * 4. TIMEFRAME / URGENCY EVALUATION
+   * ============================================================================
+   *
+   * Urgent keywords come from the live taxonomy first, with
+   * CONFIG.DEFAULT_TAXONOMY.urgentKeywords as the fallback.
+   * ============================================================================
+   */
+
   var timeframeLower = timeframeText.toLowerCase();
   var matchedUrgent = [];
 
   for (var u = 0; u < urgentKeywords.length; u++) {
-    var uk = urgentKeywords[u];
-    if (timeframeLower.indexOf(uk) !== -1) {
-      matchedUrgent.push(uk);
+
+    var urgentTerm = urgentKeywords[u]
+      .toString()
+      .toLowerCase()
+      .trim();
+
+    if (!urgentTerm) {
+      continue;
+    }
+
+    if (
+      timeframeLower.indexOf(urgentTerm) !== -1 &&
+      matchedUrgent.indexOf(urgentTerm) === -1
+    ) {
+      matchedUrgent.push(urgentTerm);
     }
   }
 
   if (matchedUrgent.length > 0) {
+
     isUrgent = true;
-    flagReasons.push("Urgent timeframe detected: '" + matchedUrgent.join(", ") + "'");
+
+    flagReasons.push(
+      "Urgent timeframe detected: '" +
+      matchedUrgent.join(", ") +
+      "'"
+    );
   }
 
-  // 4. Multiple URLs Check
-  var textParts = [goalText, timeframeText];
+  /**
+   * ============================================================================
+   * 5. MULTIPLE URL CHECK
+   * ============================================================================
+   */
+
+  var textParts = [
+    goalText,
+    timeframeText
+  ];
+
   for (var k in map) {
-    if (map[k] && typeof map[k] === 'string') textParts.push(map[k]);
-  }
-  var combinedText = textParts.join(" ").toLowerCase();
-
-  var urlMatch = combinedText.match(/https?:\/\/[^\s]+|www\.[^\s]+/g);
-  var linkCount = urlMatch ? urlMatch.length : 0;
-  if (linkCount > 1) {
-    spamScore += 2;
-    isSpam = true;
-    flagReasons.push("Contains multiple URLs (" + linkCount + ")");
-  }
-
-  // 5. Phone Validation (Restricted to repeated single-digits)
-  var phoneStr = String(map['entry_1285532466'] || map['phone'] || map['mobile'] || map['entry.1285532466'] || '').replace(/[^0-9]/g, '');
-  if (phoneStr.length > 0) {
-    if (/^0+$/.test(phoneStr) || /^1+$/.test(phoneStr)) {
-      spamScore += 1;
-      flagReasons.push("Suspicious phone format");
+    if (
+      map.hasOwnProperty(k) &&
+      map[k] &&
+      typeof map[k] === 'string'
+    ) {
+      textParts.push(map[k]);
     }
   }
 
-  // 6. Threshold & Status Label Assembly
-  var threshold = (typeof CONFIG !== 'undefined' && CONFIG.SPAM_THRESHOLD) ? CONFIG.SPAM_THRESHOLD : 3;
+  var combinedText = textParts
+    .join(" ")
+    .toLowerCase();
+
+  var urlMatch = combinedText.match(
+    /https?:\/\/[^\s]+|www\.[^\s]+/g
+  );
+
+  var linkCount = urlMatch
+    ? urlMatch.length
+    : 0;
+
+  if (linkCount > 1) {
+
+    spamScore += 2;
+    isSpam = true;
+
+    flagReasons.push(
+      "Contains multiple URLs (" +
+      linkCount +
+      ")"
+    );
+  }
+
+  /**
+   * ============================================================================
+   * 6. PHONE VALIDATION
+   * ============================================================================
+   */
+
+  var phoneStr = String(
+    map['entry_1285532466'] ||
+    map['phone'] ||
+    map['mobile'] ||
+    map['entry.1285532466'] ||
+    ''
+  ).replace(/[^0-9]/g, '');
+
+  if (phoneStr.length > 0) {
+
+    if (
+      /^0+$/.test(phoneStr) ||
+      /^1+$/.test(phoneStr)
+    ) {
+
+      spamScore += 1;
+
+      flagReasons.push(
+        "Suspicious phone format"
+      );
+    }
+  }
+
+  /**
+   * ============================================================================
+   * 7. THRESHOLD & STATUS LABEL
+   * ============================================================================
+   */
+
+  var threshold =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.SPAM_THRESHOLD
+    )
+      ? CONFIG.SPAM_THRESHOLD
+      : 3;
+
   if (spamScore >= threshold) {
     isSpam = true;
   }
 
   var statusParts = [];
-  if (isReviewRequired) statusParts.push("REVIEW REQUIRED");
-  if (isSpam) statusParts.push("SPAM DETECTED");
-  if (isUrgent) statusParts.push("URGENT");
 
-  var statusLabel = statusParts.length > 0 ? statusParts.join(" | ") : "NEW INQUIRY";
+  if (isReviewRequired) {
+    statusParts.push("REVIEW REQUIRED");
+  }
+
+  if (isSpam) {
+    statusParts.push("SPAM DETECTED");
+  }
+
+  if (isUrgent) {
+    statusParts.push("URGENT");
+  }
+
+  var statusLabel =
+    statusParts.length > 0
+      ? statusParts.join(" | ")
+      : "NEW INQUIRY";
+
   var category = categorizeLead(combinedText);
 
   return {
@@ -375,9 +704,13 @@ function evaluateSubmission(rawData, map) {
     reasons: flagReasons,
     flags: flagReasons,
     statusLabel: statusLabel,
-    category: category
+    category: category,
+    reviewMatches: goalMatches,
+    spamMatches: spamMatches,
+    urgentMatches: matchedUrgent
   };
 }
+
 
 function categorizeLead(text) {
   if (typeof CONFIG === 'undefined' || !CONFIG.DEFAULT_TAXONOMY || !CONFIG.DEFAULT_TAXONOMY.categories) {
