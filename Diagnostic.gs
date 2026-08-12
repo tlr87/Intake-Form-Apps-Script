@@ -248,4 +248,205 @@ function testFullEmailPipeline() {
   onFormSubmit(mockEvent);
   Logger.log("--- 🏁 PIPELINE TEST COMPLETE ---");
 }
+/* ============================================================================
+ * PURGE SUBMISSIONS SHEET
+ * ============================================================================
+ *
+ * Completely resets the Submissions sheet for clean testing.
+ *
+ * This function:
+ *
+ *   1. Removes the existing Submissions sheet.
+ *   2. Recreates it.
+ *   3. Creates the canonical 17-column header structure.
+ *
+ * WARNING:
+ * This permanently removes all existing submission data from the sheet.
+ *
+ * Use this during development/testing only.
+ * ========================================================================== */
 
+function purgeSubmissionsSheet() {
+
+  var ss =
+    getTargetSpreadsheetInstance();
+
+  if (!ss) {
+
+    throw new Error(
+      'Could not locate the configured spreadsheet.'
+    );
+
+  }
+
+
+  var sheetName =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.SHEET_NAME
+    )
+      ? CONFIG.SHEET_NAME
+      : 'Submissions';
+
+
+  /* =========================================================================
+   * CANONICAL SUBMISSIONS HEADERS
+   * ========================================================================= */
+
+  var headers = [
+
+    'Lead ID',
+    'Timestamp',
+    'Status',
+    'Name',
+    'Email',
+    'Phone',
+    'Address',
+    'Preferred Contact',
+    'Have You Used RD3 Tech Before?',
+    'Category',
+    'Subject / Situation',
+    'Message / Goal',
+    'Timeframe',
+    'Is Spam',
+    'Review Required',
+    'Spam Score',
+    'Flag Reasons'
+
+  ];
+
+
+  Logger.log(
+    '=================================================='
+  );
+
+  Logger.log(
+    'PURGING SUBMISSIONS SHEET'
+  );
+
+  Logger.log(
+    '=================================================='
+  );
+
+
+  /* =========================================================================
+   * DELETE EXISTING SHEET
+   * ========================================================================= */
+
+  var existingSheet =
+    ss.getSheetByName(sheetName);
+
+
+  if (existingSheet) {
+
+    Logger.log(
+      "Deleting existing sheet '" +
+      sheetName +
+      "'."
+    );
+
+    ss.deleteSheet(
+      existingSheet
+    );
+
+  } else {
+
+    Logger.log(
+      "No existing '" +
+      sheetName +
+      "' sheet found."
+    );
+
+  }
+
+
+  /* =========================================================================
+   * CREATE CLEAN SHEET
+   * ========================================================================= */
+
+  var sheet =
+    ss.insertSheet(sheetName);
+
+
+  /* =========================================================================
+   * CREATE CANONICAL HEADER
+   * ========================================================================= */
+
+  sheet
+    .getRange(
+      1,
+      1,
+      1,
+      headers.length
+    )
+    .setValues([
+      headers
+    ]);
+
+
+  /* =========================================================================
+   * BASIC FORMATTING
+   * ========================================================================= */
+
+  sheet
+    .getRange(
+      1,
+      1,
+      1,
+      headers.length
+    )
+    .setFontWeight(
+      'bold'
+    );
+
+
+  sheet.setFrozenRows(
+    1
+  );
+
+
+  /* =========================================================================
+   * LOG RESULT
+   * ========================================================================= */
+
+  Logger.log(
+    'Created clean Submissions sheet.'
+  );
+
+  Logger.log(
+    'Columns: ' +
+    headers.length
+  );
+
+  Logger.log(
+    'Header structure:'
+  );
+
+  for (
+    var i = 0;
+    i < headers.length;
+    i++
+  ) {
+
+    Logger.log(
+      (i + 1) +
+      '. ' +
+      headers[i]
+    );
+
+  }
+
+
+  Logger.log(
+    '=================================================='
+  );
+
+  Logger.log(
+    'PURGE COMPLETE'
+  );
+
+  Logger.log(
+    '=================================================='
+  );
+
+}

@@ -740,20 +740,19 @@ function testLiveRequestFromTestSheet() {
   // expects from the real website submission.
   // ==========================================================================
 
- var payload = {
+var payload = {
   name: String(values[1] || "").trim(),
   email: String(values[2] || "").trim(),
   phone: String(values[3] || "").trim(),
   address: String(values[4] || "").trim(),
   preferredContact: String(values[5] || "").trim(),
-  relationship: String(values[6] || "").trim(),
+  usedBefore: String(values[6] || "").trim(),
   userType: String(values[7] || "").trim(),
   situation: String(values[8] || "").trim(),
   achievement: String(values[9] || "").trim(),
   timeframe: String(values[10] || "").trim(),
   honeypot: ""
 };
-
   // ==========================================================================
   // Logging
   // ==========================================================================

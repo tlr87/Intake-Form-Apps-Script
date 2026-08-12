@@ -1,7 +1,10 @@
 /**
+ * ============================================================================
  * EmailService.gs - Lead Ingestion & Processing Engine for RD3 Tech
+ * ============================================================================
  *
  * Responsibilities:
+ *
  * - Receive public webhook submissions
  * - Receive Google Form submissions
  * - Normalise incoming field names
@@ -12,14 +15,15 @@
  * - Send client confirmation
  *
  * Current taxonomy source:
- *   TaxonomyService.getTaxonomy()
- *       ↓
- *   KEYWORD_TAXONOMY_JSON
- *       ↓
- *   evaluateSubmission()
+ *
+ * TaxonomyService.getTaxonomy()
+ *        ↓
+ * KEYWORD_TAXONOMY_JSON
+ *        ↓
+ * evaluateSubmission()
  *
  * Default fallback:
- *   CONFIG.DEFAULT_TAXONOMY
+ * CONFIG.DEFAULT_TAXONOMY
  *
  * No new keyword taxonomy logic should be added here.
  */
@@ -30,15 +34,34 @@
  * ========================================================================== */
 
 var EmailService = {
-  doPost: doPost,
-  onFormSubmit: onFormSubmit,
-  processSubmission: processSubmission,
-  processLeadSubmission: processSubmission,
-  logToSheet: logToSheet,
-  sendEmails: sendEmails,
-  sendAdminNotification: sendAdminNotification,
-  sendClientConfirmation: sendClientConfirmation,
-  evaluateSubmission: evaluateSubmission
+
+  doPost:
+    doPost,
+
+  onFormSubmit:
+    onFormSubmit,
+
+  processSubmission:
+    processSubmission,
+
+  processLeadSubmission:
+    processSubmission,
+
+  logToSheet:
+    logToSheet,
+
+  sendEmails:
+    sendEmails,
+
+  sendAdminNotification:
+    sendAdminNotification,
+
+  sendClientConfirmation:
+    sendClientConfirmation,
+
+  evaluateSubmission:
+    evaluateSubmission
+
 };
 
 
@@ -53,6 +76,7 @@ var EmailService = {
  * Uses Script Cache rather than a spreadsheet/database.
  *
  * This protection is applied only to:
+ *
  * - doPost()
  * - onFormSubmit()
  *
@@ -60,72 +84,102 @@ var EmailService = {
  */
 function checkSubmissionRateLimit(rawData) {
 
-  var data = rawData || {};
+  var data =
+    rawData || {};
 
-  var email = String(
-    data['entry.817428911'] ||
-    data['entry_817428911'] ||
-    data.email ||
-    data.Email ||
-    ''
-  ).toLowerCase().trim();
+  var email =
+    String(
+      data['entry.817428911'] ||
+      data['entry_817428911'] ||
+      data.email ||
+      data.Email ||
+      ''
+    )
+      .toLowerCase()
+      .trim();
 
-  var name = String(
-    data['entry.1576532276'] ||
-    data['entry_1576532276'] ||
-    data.name ||
-    data.Name ||
-    ''
-  ).toLowerCase().trim();
+  var name =
+    String(
+      data['entry.1576532276'] ||
+      data['entry_1576532276'] ||
+      data.name ||
+      data.Name ||
+      ''
+    )
+      .toLowerCase()
+      .trim();
 
-  var phone = String(
-    data['entry.1285532466'] ||
-    data['entry_1285532466'] ||
-    data.phone ||
-    data.Phone ||
-    ''
-  ).replace(/\D/g, '');
+  var phone =
+    String(
+      data['entry.1285532466'] ||
+      data['entry_1285532466'] ||
+      data.phone ||
+      data.Phone ||
+      ''
+    )
+      .replace(/\D/g, '');
 
-  if (!email && !name && !phone) {
+  if (
+    !email &&
+    !name &&
+    !phone
+  ) {
+
     return true;
+
   }
 
   var fingerprintSource =
-    email + '|' +
-    name + '|' +
+    email +
+    '|' +
+    name +
+    '|' +
     phone;
 
-  var digest = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    fingerprintSource,
-    Utilities.Charset.UTF_8
-  );
+  var digest =
+    Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256,
+      fingerprintSource,
+      Utilities.Charset.UTF_8
+    );
 
   var fingerprint =
-    Utilities.base64Encode(digest)
-      .replace(/[^a-zA-Z0-9]/g, '');
+    Utilities
+      .base64Encode(digest)
+      .replace(
+        /[^a-zA-Z0-9]/g,
+        ''
+      );
 
   var cache =
     CacheService.getScriptCache();
 
   var cacheKey =
-    'submission_rate_' + fingerprint;
+    'submission_rate_' +
+    fingerprint;
 
-  if (cache.get(cacheKey)) {
+  if (
+    cache.get(cacheKey)
+  ) {
 
     Logger.log(
-      '⚠️ Duplicate public submission blocked within rate-limit window.'
+      'Duplicate public submission blocked within rate-limit window.'
     );
 
     return false;
+
   }
 
   var rateLimitSeconds =
     (
       typeof CONFIG !== 'undefined' &&
-      Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS) > 0
+      Number(
+        CONFIG.SUBMISSION_RATE_LIMIT_SECONDS
+      ) > 0
     )
-      ? Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS)
+      ? Number(
+          CONFIG.SUBMISSION_RATE_LIMIT_SECONDS
+        )
       : 60;
 
   cache.put(
@@ -135,6 +189,7 @@ function checkSubmissionRateLimit(rawData) {
   );
 
   return true;
+
 }
 
 
@@ -148,9 +203,14 @@ function checkSubmissionRateLimit(rawData) {
 function isValidEmailAddress(email) {
 
   var value =
-    String(email || '').trim();
+    String(
+      email || ''
+    ).trim();
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    value
+  );
+
 }
 
 
@@ -164,20 +224,24 @@ function isValidEmailAddress(email) {
  * Examples:
  *
  * [tom@example.com](mailto:tom@example.com)
- *     ↓
+ *        ↓
  * tom@example.com
  *
  * mailto:tom@example.com
- *     ↓
+ *        ↓
  * tom@example.com
  */
 function normalizeEmailAddress(value) {
 
   var email =
-    String(value || '').trim();
+    String(
+      value || ''
+    ).trim();
 
   if (!email) {
+
     return '';
+
   }
 
   /*
@@ -188,21 +252,31 @@ function normalizeEmailAddress(value) {
       /^\[([^\]]+)\]\(\s*mailto:([^)]+)\)$/i
     );
 
-  if (markdownMatch) {
+  if (
+    markdownMatch
+  ) {
+
     email =
       markdownMatch[2]
         .trim();
+
   }
 
   /*
    * Handle plain mailto links.
    */
-  if (/^mailto:/i.test(email)) {
+  if (
+    /^mailto:/i.test(email)
+  ) {
 
     email =
       email
-        .replace(/^mailto:/i, '')
+        .replace(
+          /^mailto:/i,
+          ''
+        )
         .trim();
+
   }
 
   /*
@@ -210,10 +284,14 @@ function normalizeEmailAddress(value) {
    */
   email =
     email
-      .replace(/^<|>$/g, '')
+      .replace(
+        /^<|>$/g,
+        ''
+      )
       .trim();
 
   return email;
+
 }
 
 
@@ -227,7 +305,7 @@ function normalizeEmailAddress(value) {
 function doPost(e) {
 
   Logger.log(
-    '=== 🌐 WEBHOOK DOPOST TRIGGERED ==='
+    '=== WEBHOOK DOPOST TRIGGERED ==='
   );
 
   try {
@@ -236,23 +314,27 @@ function doPost(e) {
       parseIncomingRequest(e);
 
     Logger.log(
-      '📥 Parsed Webhook Data: ' +
+      'Parsed Webhook Data: ' +
       JSON.stringify(data)
     );
 
     /*
      * Duplicate / rate-limit protection.
      */
-    if (!checkSubmissionRateLimit(data)) {
+    if (
+      !checkSubmissionRateLimit(data)
+    ) {
 
       Logger.log(
-        '⚠️ Public submission blocked by duplicate/rate-limit protection.'
+        'Public submission blocked by duplicate/rate-limit protection.'
       );
 
       return ContentService
         .createTextOutput(
           JSON.stringify({
-            status: 'blocked',
+            status:
+              'blocked',
+
             message:
               'Duplicate submission detected. Please wait before submitting again.'
           })
@@ -260,6 +342,7 @@ function doPost(e) {
         .setMimeType(
           ContentService.MimeType.JSON
         );
+
     }
 
     var result =
@@ -268,7 +351,9 @@ function doPost(e) {
     return ContentService
       .createTextOutput(
         JSON.stringify({
-          status: 'success',
+          status:
+            'success',
+
           id:
             result
               ? result.id
@@ -282,14 +367,16 @@ function doPost(e) {
   } catch (err) {
 
     Logger.log(
-      '❌ CRITICAL ERROR in doPost: ' +
+      'CRITICAL ERROR in doPost: ' +
       err.toString()
     );
 
     return ContentService
       .createTextOutput(
         JSON.stringify({
-          status: 'error',
+          status:
+            'error',
+
           message:
             err.toString()
         })
@@ -297,7 +384,9 @@ function doPost(e) {
       .setMimeType(
         ContentService.MimeType.JSON
       );
+
   }
+
 }
 
 
@@ -309,6 +398,7 @@ function doPost(e) {
  * Handles Google Form submissions.
  *
  * Supports:
+ *
  * - e.namedValues
  * - e.response
  * - e.values + e.range
@@ -318,12 +408,13 @@ function doPost(e) {
 function onFormSubmit(e) {
 
   Logger.log(
-    '=== 🚀 FORM SUBMISSION TRIGGERED ==='
+    '=== FORM SUBMISSION TRIGGERED ==='
   );
 
   try {
 
-    var data = {};
+    var data =
+      {};
 
     /*
      * Google Form trigger.
@@ -331,11 +422,13 @@ function onFormSubmit(e) {
     if (
       e &&
       e.namedValues &&
-      Object.keys(e.namedValues).length > 0
+      Object.keys(
+        e.namedValues
+      ).length > 0
     ) {
 
       Logger.log(
-        '📥 Form Data Source: e.namedValues'
+        'Form Data Source: e.namedValues'
       );
 
       data =
@@ -350,7 +443,7 @@ function onFormSubmit(e) {
     ) {
 
       Logger.log(
-        '📥 Form Data Source: e.response'
+        'Form Data Source: e.response'
       );
 
       var itemResponses =
@@ -363,16 +456,14 @@ function onFormSubmit(e) {
       ) {
 
         var item =
-          itemResponses[i]
-            .getItem();
+          itemResponses[i].getItem();
 
         var title =
-          item
-            .getTitle();
+          item.getTitle();
 
         data[title] =
-          itemResponses[i]
-            .getResponse();
+          itemResponses[i].getResponse();
+
       }
 
     /*
@@ -385,7 +476,7 @@ function onFormSubmit(e) {
     ) {
 
       Logger.log(
-        '📥 Form Data Source: e.values (Spreadsheet row)'
+        'Form Data Source: e.values (Spreadsheet row)'
       );
 
       var sheet =
@@ -407,7 +498,9 @@ function onFormSubmit(e) {
         h++
       ) {
 
-        if (headers[h]) {
+        if (
+          headers[h]
+        ) {
 
           data[
             headers[h]
@@ -415,7 +508,9 @@ function onFormSubmit(e) {
               .trim()
           ] =
             e.values[h];
+
         }
+
       }
 
     /*
@@ -427,7 +522,7 @@ function onFormSubmit(e) {
     ) {
 
       Logger.log(
-        '📥 Form Data Source: e.parameter'
+        'Form Data Source: e.parameter'
       );
 
       data =
@@ -439,39 +534,49 @@ function onFormSubmit(e) {
     } else {
 
       Logger.log(
-        '⚠️ Trigger event object missing or empty. ' +
+        'Trigger event object missing or empty. ' +
         'Fetching latest row from Sheet as safety fallback...'
       );
 
       return processLatestSheetRow();
+
     }
 
     Logger.log(
-      '📦 Parsed Raw Payload: ' +
+      'Parsed Raw Payload: ' +
       JSON.stringify(data)
     );
 
     /*
      * Duplicate / rate-limit protection.
      */
-    if (!checkSubmissionRateLimit(data)) {
+    if (
+      !checkSubmissionRateLimit(data)
+    ) {
 
       Logger.log(
-        '⚠️ Form submission blocked by duplicate/rate-limit protection.'
+        'Form submission blocked by duplicate/rate-limit protection.'
       );
 
       return;
+
     }
 
-    return processSubmission(data);
+    return processSubmission(
+      data
+    );
 
   } catch (err) {
 
     Logger.log(
-      '❌ CRITICAL ERROR in onFormSubmit: ' +
+      'CRITICAL ERROR in onFormSubmit: ' +
       err.toString()
     );
+
+    throw err;
+
   }
+
 }
 
 
@@ -490,10 +595,11 @@ function processLatestSheetRow() {
   if (!ss) {
 
     Logger.log(
-      '❌ Fallback Failed: Spreadsheet target unreachable.'
+      'Fallback Failed: Spreadsheet target unreachable.'
     );
 
     return;
+
   }
 
   var sheetName =
@@ -505,19 +611,24 @@ function processLatestSheetRow() {
       : 'Form Responses 1';
 
   var sheet =
-    ss.getSheetByName(sheetName) ||
+    ss.getSheetByName(
+      sheetName
+    ) ||
     ss.getSheets()[0];
 
   var lastRow =
     sheet.getLastRow();
 
-  if (lastRow < 2) {
+  if (
+    lastRow < 2
+  ) {
 
     Logger.log(
-      '⚠️ Fallback Skipped: Sheet has no submission data rows.'
+      'Fallback Skipped: Sheet has no submission data rows.'
     );
 
     return;
+
   }
 
   var lastColumn =
@@ -543,7 +654,8 @@ function processLatestSheetRow() {
       )
       .getValues()[0];
 
-  var payload = {};
+  var payload =
+    {};
 
   for (
     var i = 0;
@@ -551,7 +663,9 @@ function processLatestSheetRow() {
     i++
   ) {
 
-    if (headers[i]) {
+    if (
+      headers[i]
+    ) {
 
       payload[
         headers[i]
@@ -559,17 +673,22 @@ function processLatestSheetRow() {
           .trim()
       ] =
         values[i];
+
     }
+
   }
 
   Logger.log(
-    '📄 Extracted Fallback Payload from Row ' +
+    'Extracted Fallback Payload from Row ' +
     lastRow +
     ': ' +
     JSON.stringify(payload)
   );
 
-  return processSubmission(payload);
+  return processSubmission(
+    payload
+  );
+
 }
 
 
@@ -583,20 +702,24 @@ function processLatestSheetRow() {
 function processSubmission(rawData) {
 
   Logger.log(
-    '=== ⚙️ PROCESSING SUBMISSION ==='
+    '=== PROCESSING SUBMISSION ==='
   );
 
   if (!rawData) {
 
     Logger.log(
-      '⚠️ processSubmission called without rawData payload.'
+      'processSubmission called without rawData payload.'
     );
 
-    rawData = {};
+    rawData =
+      {};
+
   }
 
   var extractedMap =
-    normalizeInputKeys(rawData);
+    normalizeInputKeys(
+      rawData
+    );
 
   var evaluation =
     evaluateSubmission(
@@ -605,7 +728,7 @@ function processSubmission(rawData) {
     );
 
   Logger.log(
-    '🔍 Evaluation Result: ' +
+    'Evaluation Result: ' +
     JSON.stringify(evaluation)
   );
 
@@ -625,11 +748,14 @@ function processSubmission(rawData) {
     );
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * UNIVERSAL VALUE EXTRACTOR
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
-  function getValue(keys, defaultValue) {
+  function getValue(
+    keys,
+    defaultValue
+  ) {
 
     /*
      * 1. Exact raw-key match.
@@ -647,7 +773,9 @@ function processSubmission(rawData) {
         rawData &&
         rawData[key] !== undefined &&
         rawData[key] !== null &&
-        String(rawData[key]).trim() !== ''
+        String(
+          rawData[key]
+        ).trim() !== ''
       ) {
 
         var value =
@@ -656,8 +784,11 @@ function processSubmission(rawData) {
         return Array.isArray(value)
           ? value.join(', ').trim()
           : String(value).trim();
+
       }
+
     }
+
 
     /*
      * 2. Normalised-key match.
@@ -669,36 +800,49 @@ function processSubmission(rawData) {
     ) {
 
       var cleanKey =
-        normalizeKey(keys[j]);
+        normalizeKey(
+          keys[j]
+        );
 
       if (
         extractedMap &&
         extractedMap[cleanKey] !== undefined &&
         extractedMap[cleanKey] !== null &&
-        String(extractedMap[cleanKey]).trim() !== ''
+        String(
+          extractedMap[cleanKey]
+        ).trim() !== ''
       ) {
 
         return String(
           extractedMap[cleanKey]
         ).trim();
+
       }
+
     }
+
 
     /*
      * 3. Fuzzy key match.
      */
     for (
-      var rawKey in rawData
+      var pRawKey in rawData
     ) {
 
       if (
-        !rawData.hasOwnProperty(rawKey)
+        !rawData.hasOwnProperty(
+          pRawKey
+        )
       ) {
+
         continue;
+
       }
 
       var lowerRawKey =
-        normalizeKey(rawKey);
+        normalizeKey(
+          pRawKey
+        );
 
       for (
         var p = 0;
@@ -707,40 +851,57 @@ function processSubmission(rawData) {
       ) {
 
         var targetKey =
-          normalizeKey(keys[p]);
+          normalizeKey(
+            keys[p]
+          );
 
         if (
           targetKey.length > 2 &&
           (
-            lowerRawKey.indexOf(targetKey) !== -1 ||
-            targetKey.indexOf(lowerRawKey) !== -1
+            lowerRawKey.indexOf(
+              targetKey
+            ) !== -1 ||
+            targetKey.indexOf(
+              lowerRawKey
+            ) !== -1
           )
         ) {
 
           var fuzzyValue =
-            rawData[rawKey];
+            rawData[pRawKey];
 
           if (
             fuzzyValue !== undefined &&
             fuzzyValue !== null &&
-            String(fuzzyValue).trim() !== ''
+            String(
+              fuzzyValue
+            ).trim() !== ''
           ) {
 
-            return Array.isArray(fuzzyValue)
+            return Array.isArray(
+              fuzzyValue
+            )
               ? fuzzyValue.join(', ').trim()
-              : String(fuzzyValue).trim();
+              : String(
+                  fuzzyValue
+                ).trim();
+
           }
+
         }
+
       }
+
     }
 
     return defaultValue;
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * STANDARD FIELD EXTRACTION
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var nameVal =
     getValue(
@@ -773,14 +934,19 @@ function processSubmission(rawData) {
     );
 
   emailVal =
-    normalizeEmailAddress(emailVal);
+    normalizeEmailAddress(
+      emailVal
+    );
 
 
   /*
-   * Fallback: scan all submitted values for an email address.
+   * Fallback:
+   * scan all submitted values for an email address.
    */
   if (
-    !isValidEmailAddress(emailVal) &&
+    !isValidEmailAddress(
+      emailVal
+    ) &&
     rawData
   ) {
 
@@ -789,9 +955,13 @@ function processSubmission(rawData) {
     ) {
 
       if (
-        !rawData.hasOwnProperty(rawK)
+        !rawData.hasOwnProperty(
+          rawK
+        )
       ) {
+
         continue;
+
       }
 
       var rawV =
@@ -800,22 +970,34 @@ function processSubmission(rawData) {
         ).trim();
 
       var possibleEmail =
-        normalizeEmailAddress(rawV);
+        normalizeEmailAddress(
+          rawV
+        );
 
       if (
-        isValidEmailAddress(possibleEmail)
+        isValidEmailAddress(
+          possibleEmail
+        )
       ) {
 
         emailVal =
           possibleEmail;
 
         break;
+
       }
+
     }
+
   }
 
-  if (!emailVal) {
-    emailVal = 'N/A';
+  if (
+    !emailVal
+  ) {
+
+    emailVal =
+      'N/A';
+
   }
 
 
@@ -852,14 +1034,16 @@ function processSubmission(rawData) {
 
 
   /*
-   * NEW:
    * Preferred Contact
+   *
+   * Actual Google Form entry:
+   * entry.1615186237
    */
   var preferredContactVal =
     getValue(
       [
-        'entry.PREFERRED_CONTACT_ID',
-        'entry_PREFERRED_CONTACT_ID',
+        'entry.1615186237',
+        'entry_1615186237',
         'preferredContact',
         'preferred_contact',
         'Preferred Contact',
@@ -872,49 +1056,31 @@ function processSubmission(rawData) {
 
 
   /*
-   * NEW:
-   * Relationship
+   * Have you used RD3 Tech before?
+   *
+   * Actual Google Form entry:
+   * entry.1388942246
    */
-  var relationshipVal =
+  var usedBeforeVal =
     getValue(
       [
-        'entry.RELATIONSHIP_ID',
-        'entry_RELATIONSHIP_ID',
-        'relationship',
-        'Relationship',
-        'customer_relationship'
+        'entry.1388942246',
+        'entry_1388942246',
+        'usedBefore',
+        'used_before',
+        'Have you used RD3 Tech before?',
+        'have you used rd3 tech before?',
+        'previousCustomer'
       ],
       ''
     );
 
 
   /*
-   * Category.
-   *
-   * IMPORTANT:
-   * We now explicitly support the actual Google Form field:
-   *
-   * Category
-   */
-  var categoryVal =
-    getValue(
-      [
-        'entry.343301224',
-        'entry_343301224',
-        'userType',
-        'user_type',
-        'category',
-        'Category',
-        'User Type',
-        'user type'
-      ],
-      evaluation.category ||
-      'General Inquiry'
-    );
-
-
-  /*
    * Situation.
+   *
+   * Actual Google Form entry:
+   * entry.650060968
    */
   var situationVal =
     getValue(
@@ -931,35 +1097,70 @@ function processSubmission(rawData) {
 
 
   /*
-   * Goal / Desired Outcome.
+   * ==========================================================================
+   * GOAL / DESIRED OUTCOME / MESSAGE
+   * ==========================================================================
    *
-   * IMPORTANT:
-   * This is kept separate from timeframe.
+   * Actual Google Form entry:
+   * entry.483026621
    */
   var messageVal =
     getValue(
       [
         'entry.483026621',
         'entry_483026621',
-        'what_are_you_trying_to_achieve',
+        'message',
+        'achievement',
+        'goal',
+        'desired_outcome',
+        'desired outcome',
+        'Goal / Desired Outcome',
         'What Are You Trying To Achieve?',
         'What are you trying to achieve?',
-        'Goal / Desired Outcome',
-        'Goal',
-        'achievement',
-        'message',
-        'details',
-        'desired_outcome'
+        'Message / Goal'
       ],
       ''
     );
 
 
   /*
+   * Legacy compatibility.
+   *
+   * Older templates may still reference achievement.
+   */
+  var achievementVal =
+    messageVal;
+
+
+  /*
+   * ==========================================================================
+   * CATEGORY / USER TYPE
+   * ==========================================================================
+   *
+   * Actual Google Form entry:
+   * entry.343301224
+   */
+  var categoryVal =
+    getValue(
+      [
+        'entry.343301224',
+        'entry_343301224',
+        'category',
+        'userType',
+        'user_type',
+        'Category',
+        'User Type',
+        'user type'
+      ],
+      'General Inquiry'
+    );
+
+
+  /*
    * Timeframe.
    *
-   * IMPORTANT:
-   * Do NOT include the goal field here as a fallback.
+   * Actual Google Form entry:
+   * entry.1883892334
    */
   var timeframeVal =
     getValue(
@@ -978,9 +1179,9 @@ function processSubmission(rawData) {
     );
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * STANDARD SUBMISSION OBJECT
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var submission = {
 
@@ -1006,12 +1207,24 @@ function processSubmission(rawData) {
     preferredContact:
       preferredContactVal,
 
+    /*
+     * Canonical field.
+     */
+    usedBefore:
+      usedBeforeVal,
+
+    /*
+     * Legacy compatibility.
+     */
     relationship:
-      relationshipVal,
+      usedBeforeVal,
 
     category:
       categoryVal,
 
+    /*
+     * Legacy compatibility.
+     */
     userType:
       categoryVal,
 
@@ -1024,53 +1237,67 @@ function processSubmission(rawData) {
     message:
       messageVal,
 
+    /*
+     * Legacy compatibility.
+     */
     achievement:
-      messageVal,
+      achievementVal,
 
     timeframe:
       timeframeVal,
 
     isSpam:
-      evaluation.isSpam || false,
+      evaluation.isSpam ||
+      false,
 
     isReviewRequired:
-      evaluation.isReviewRequired || false,
+      evaluation.isReviewRequired ||
+      false,
 
     isUrgent:
-      evaluation.isUrgent || false,
+      evaluation.isUrgent ||
+      false,
 
     spamScore:
-      evaluation.spamScore || 0,
+      evaluation.spamScore ||
+      0,
 
     flagReasons:
       (
         evaluation.flagReasons &&
         evaluation.flagReasons.length
       )
-        ? evaluation.flagReasons.join(' | ')
+        ? evaluation.flagReasons.join(
+            ' | '
+          )
         : '',
 
     reasons:
-      evaluation.flagReasons || [],
+      evaluation.flagReasons ||
+      [],
 
     flags:
-      evaluation.flagReasons || [],
+      evaluation.flagReasons ||
+      [],
 
     status:
       evaluation.statusLabel ||
       'NEW INQUIRY',
 
     rawData:
-      JSON.stringify(rawData)
+      JSON.stringify(
+        rawData
+      )
+
   };
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * LOGGING
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   Logger.log(
-    '👤 Extracted Lead Profile:'
+    'Extracted Lead Profile:'
   );
 
   Logger.log(
@@ -1089,13 +1316,18 @@ function processSubmission(rawData) {
   );
 
   Logger.log(
+    '   - Address: ' +
+    submission.address
+  );
+
+  Logger.log(
     '   - Preferred Contact: ' +
     submission.preferredContact
   );
 
   Logger.log(
-    '   - Relationship: ' +
-    submission.relationship
+    '   - Used RD3 Tech Before: ' +
+    submission.usedBefore
   );
 
   Logger.log(
@@ -1142,10 +1374,11 @@ function processSubmission(rawData) {
 
 
   Logger.log(
-    '=== ✅ SUBMISSION PROCESSING COMPLETE ==='
+    '=== SUBMISSION PROCESSING COMPLETE ==='
   );
 
   return submission;
+
 }
 
 
@@ -1158,11 +1391,23 @@ function processSubmission(rawData) {
  */
 function normalizeKey(key) {
 
-  return String(key || '')
+  return String(
+    key || ''
+  )
     .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(
+      /[^a-z0-9_]+/g,
+      '_'
+    )
+    .replace(
+      /_+/g,
+      '_'
+    )
+    .replace(
+      /^_+|_+$/g,
+      ''
+    );
+
 }
 
 
@@ -1171,10 +1416,13 @@ function normalizeKey(key) {
  */
 function normalizeInputKeys(rawData) {
 
-  var map = {};
+  var map =
+    {};
 
   if (!rawData) {
+
     return map;
+
   }
 
   for (
@@ -1182,30 +1430,41 @@ function normalizeInputKeys(rawData) {
   ) {
 
     if (
-      !rawData.hasOwnProperty(key)
+      !rawData.hasOwnProperty(
+        key
+      )
     ) {
+
       continue;
+
     }
 
     var cleanKey =
-      normalizeKey(key);
+      normalizeKey(
+        key
+      );
 
     var value =
       rawData[key];
 
-    if (Array.isArray(value)) {
+    if (
+      Array.isArray(value)
+    ) {
 
       value =
         value.join(', ');
+
     }
 
     map[cleanKey] =
       String(
         value || ''
       ).trim();
+
   }
 
   return map;
+
 }
 
 
@@ -1215,6 +1474,7 @@ function normalizeInputKeys(rawData) {
 
 /**
  * Evaluates:
+ *
  * - Honeypot
  * - Review keywords
  * - Spam keywords
@@ -1229,22 +1489,28 @@ function evaluateSubmission(
   map
 ) {
 
-  var flagReasons = [];
+  var flagReasons =
+    [];
 
-  var spamScore = 0;
+  var spamScore =
+    0;
 
-  var isSpam = false;
+  var isSpam =
+    false;
 
-  var isReviewRequired = false;
+  var isReviewRequired =
+    false;
 
-  var isUrgent = false;
+  var isUrgent =
+    false;
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * TAXONOMY
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
-  var taxonomy = {};
+  var taxonomy =
+    {};
 
   if (
     typeof TaxonomyService !== 'undefined' &&
@@ -1252,9 +1518,10 @@ function evaluateSubmission(
   ) {
 
     taxonomy =
-      TaxonomyService.getTaxonomy() || {};
-  }
+      TaxonomyService.getTaxonomy() ||
+      {};
 
+  }
 
   var defaultTaxonomy =
     (
@@ -1301,9 +1568,9 @@ function evaluateSubmission(
         );
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * VALUE EXTRACTION
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   function extractValue(keys) {
 
@@ -1323,7 +1590,9 @@ function evaluateSubmission(
         rawData &&
         rawData[key] !== undefined &&
         rawData[key] !== null &&
-        String(rawData[key]).trim() !== ''
+        String(
+          rawData[key]
+        ).trim() !== ''
       ) {
 
         var value =
@@ -1331,8 +1600,12 @@ function evaluateSubmission(
 
         return Array.isArray(value)
           ? value.join(' ').trim()
-          : String(value).trim();
+          : String(
+              value
+            ).trim();
+
       }
+
     }
 
 
@@ -1346,25 +1619,35 @@ function evaluateSubmission(
     ) {
 
       var cleanKey =
-        normalizeKey(keys[j]);
+        normalizeKey(
+          keys[j]
+        );
 
       if (
         map &&
         map[cleanKey] !== undefined &&
         map[cleanKey] !== null &&
-        String(map[cleanKey]).trim() !== ''
+        String(
+          map[cleanKey]
+        ).trim() !== ''
       ) {
 
         return String(
           map[cleanKey]
         ).trim();
+
       }
+
     }
 
     return '';
+
   }
 
 
+  /*
+   * Goal / Desired Outcome.
+   */
   var goalText =
     extractValue(
       [
@@ -1378,11 +1661,15 @@ function evaluateSubmission(
         'achievement',
         'message',
         'details',
-        'desired_outcome'
+        'desired_outcome',
+        'Message / Goal'
       ]
     );
 
 
+  /*
+   * Timeframe.
+   */
   var timeframeText =
     extractValue(
       [
@@ -1399,9 +1686,9 @@ function evaluateSubmission(
     );
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * HONEYPOT
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var hpField =
     (
@@ -1423,26 +1710,30 @@ function evaluateSubmission(
     map.website_url_hp
   ) {
 
-    isSpam = true;
+    isSpam =
+      true;
 
-    spamScore += 5;
+    spamScore +=
+      5;
 
     flagReasons.push(
       "Honeypot field filled ('" +
       hpField +
       "')"
     );
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * REVIEW KEYWORDS
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var goalLower =
     goalText.toLowerCase();
 
-  var goalMatches = [];
+  var goalMatches =
+    [];
 
 
   if (
@@ -1462,7 +1753,9 @@ function evaluateSubmission(
           .trim();
 
       if (!rawKw) {
+
         continue;
+
       }
 
       var isMatched =
@@ -1479,16 +1772,22 @@ function evaluateSubmission(
         var rx =
           new RegExp(
             '(^|[^a-z0-9])' +
-            escapeRegExp(rawKw) +
+            escapeRegExp(
+              rawKw
+            ) +
             '($|[^a-z0-9])',
             'i'
           );
 
         if (
-          rx.test(goalLower)
+          rx.test(
+            goalLower
+          )
         ) {
 
-          isMatched = true;
+          isMatched =
+            true;
+
         }
 
       /*
@@ -1503,28 +1802,40 @@ function evaluateSubmission(
           );
 
         if (
-          goalLower.indexOf(rawKw) !== -1 ||
+          goalLower.indexOf(
+            rawKw
+          ) !== -1 ||
           (
             stemKw.length >= 3 &&
-            goalLower.indexOf(stemKw) !== -1
+            goalLower.indexOf(
+              stemKw
+            ) !== -1
           )
         ) {
 
-          isMatched = true;
+          isMatched =
+            true;
+
         }
+
       }
 
 
       if (
         isMatched &&
-        goalMatches.indexOf(rawKw) === -1
+        goalMatches.indexOf(
+          rawKw
+        ) === -1
       ) {
 
         goalMatches.push(
           rawKw
         );
+
       }
+
     }
+
   }
 
 
@@ -1532,18 +1843,20 @@ function evaluateSubmission(
     goalMatches.length > 0
   ) {
 
-    isReviewRequired = true;
+    isReviewRequired =
+      true;
 
     flagReasons.push(
       'Goal / Desired Outcome matched review keyword(s): ' +
       goalMatches.join(', ')
     );
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * SPAM KEYWORDS
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var combinedKeywordText =
     (
@@ -1551,15 +1864,20 @@ function evaluateSubmission(
       ' ' +
       timeframeText +
       ' ' +
-      Object.keys(map || {})
-        .map(function(key) {
-          return map[key];
-        })
+      Object.keys(
+        map || {}
+      )
+        .map(
+          function(key) {
+            return map[key];
+          }
+        )
         .join(' ')
     ).toLowerCase();
 
 
-  var spamMatches = [];
+  var spamMatches =
+    [];
 
 
   for (
@@ -1575,18 +1893,26 @@ function evaluateSubmission(
         .trim();
 
     if (!spamTerm) {
+
       continue;
+
     }
 
     if (
-      combinedKeywordText.indexOf(spamTerm) !== -1 &&
-      spamMatches.indexOf(spamTerm) === -1
+      combinedKeywordText.indexOf(
+        spamTerm
+      ) !== -1 &&
+      spamMatches.indexOf(
+        spamTerm
+      ) === -1
     ) {
 
       spamMatches.push(
         spamTerm
       );
+
     }
+
   }
 
 
@@ -1601,17 +1927,19 @@ function evaluateSubmission(
       'Spam keyword(s) matched: ' +
       spamMatches.join(', ')
     );
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * URGENT KEYWORDS
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var timeframeLower =
     timeframeText.toLowerCase();
 
-  var matchedUrgent = [];
+  var matchedUrgent =
+    [];
 
 
   for (
@@ -1627,18 +1955,26 @@ function evaluateSubmission(
         .trim();
 
     if (!urgentTerm) {
+
       continue;
+
     }
 
     if (
-      timeframeLower.indexOf(urgentTerm) !== -1 &&
-      matchedUrgent.indexOf(urgentTerm) === -1
+      timeframeLower.indexOf(
+        urgentTerm
+      ) !== -1 &&
+      matchedUrgent.indexOf(
+        urgentTerm
+      ) === -1
     ) {
 
       matchedUrgent.push(
         urgentTerm
       );
+
     }
+
   }
 
 
@@ -1646,24 +1982,27 @@ function evaluateSubmission(
     matchedUrgent.length > 0
   ) {
 
-    isUrgent = true;
+    isUrgent =
+      true;
 
     flagReasons.push(
       "Urgent timeframe detected: '" +
       matchedUrgent.join(', ') +
       "'"
     );
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * MULTIPLE URL CHECK
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
-  var textParts = [
-    goalText,
-    timeframeText
-  ];
+  var textParts =
+    [
+      goalText,
+      timeframeText
+    ];
 
 
   for (
@@ -1679,7 +2018,9 @@ function evaluateSubmission(
       textParts.push(
         map[k]
       );
+
     }
+
   }
 
 
@@ -1705,21 +2046,24 @@ function evaluateSubmission(
     linkCount > 1
   ) {
 
-    spamScore += 2;
+    spamScore +=
+      2;
 
-    isSpam = true;
+    isSpam =
+      true;
 
     flagReasons.push(
       'Contains multiple URLs (' +
       linkCount +
       ')'
     );
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * PHONE VALIDATION
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var phoneStr =
     String(
@@ -1727,12 +2071,12 @@ function evaluateSubmission(
       map.phone ||
       map.phone_number ||
       map.mobile ||
-      map.entry_1285532466 ||
       ''
-    ).replace(
-      /[^0-9]/g,
-      ''
-    );
+    )
+      .replace(
+        /[^0-9]/g,
+        ''
+      );
 
 
   if (
@@ -1744,19 +2088,22 @@ function evaluateSubmission(
       /^1+$/.test(phoneStr)
     ) {
 
-      spamScore += 1;
+      spamScore +=
+        1;
 
       flagReasons.push(
         'Suspicious phone format: ' +
         phoneStr
       );
+
     }
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * THRESHOLD
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
   var threshold =
     (
@@ -1773,15 +2120,18 @@ function evaluateSubmission(
     spamScore >= threshold
   ) {
 
-    isSpam = true;
+    isSpam =
+      true;
+
   }
 
 
-  /* --------------------------------------------------------------------------
+  /* ------------------------------------------------------------------------
    * STATUS
-   * ------------------------------------------------------------------------ */
+   * ---------------------------------------------------------------------- */
 
-  var statusParts = [];
+  var statusParts =
+    [];
 
 
   if (
@@ -1791,6 +2141,7 @@ function evaluateSubmission(
     statusParts.push(
       'REVIEW REQUIRED'
     );
+
   }
 
 
@@ -1801,6 +2152,7 @@ function evaluateSubmission(
     statusParts.push(
       'SPAM DETECTED'
     );
+
   }
 
 
@@ -1811,19 +2163,40 @@ function evaluateSubmission(
     statusParts.push(
       'URGENT'
     );
+
   }
 
 
   var statusLabel =
     statusParts.length > 0
-      ? statusParts.join(' | ')
+      ? statusParts.join(
+          ' | '
+        )
       : 'NEW INQUIRY';
 
 
-  /*
-   * Current category system intentionally disabled.
+  /* ------------------------------------------------------------------------
+   * CATEGORY
+   * ---------------------------------------------------------------------- *
+   *
+   * IMPORTANT:
+   *
+   * Category comes from the Google Form.
+   * Do not overwrite it with General Inquiry.
    */
   var category =
+    extractValue(
+      [
+        'entry.343301224',
+        'entry_343301224',
+        'category',
+        'userType',
+        'user_type',
+        'Category',
+        'User Type',
+        'user type'
+      ]
+    ) ||
     'General Inquiry';
 
 
@@ -1864,7 +2237,9 @@ function evaluateSubmission(
 
     urgentMatches:
       matchedUrgent
+
   };
+
 }
 
 
@@ -1874,11 +2249,14 @@ function evaluateSubmission(
 
 function escapeRegExp(value) {
 
-  return String(value || '')
+  return String(
+    value || ''
+  )
     .replace(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&'
     );
+
 }
 
 
@@ -1900,6 +2278,7 @@ function categorizeLead(text) {
   ) {
 
     return 'General Inquiry';
+
   }
 
   var categories =
@@ -1915,9 +2294,12 @@ function categorizeLead(text) {
     var cat =
       categories[i];
 
+
     if (
       cat.keywords &&
-      Array.isArray(cat.keywords)
+      Array.isArray(
+        cat.keywords
+      )
     ) {
 
       for (
@@ -1934,12 +2316,18 @@ function categorizeLead(text) {
         ) {
 
           return cat.name;
+
         }
+
       }
+
     }
+
   }
 
+
   return 'General Inquiry';
+
 }
 
 
@@ -1983,6 +2371,7 @@ function getFlaggedKeywords() {
     var ss =
       getTargetSpreadsheetInstance();
 
+
     if (ss) {
 
       var flaggedSheet =
@@ -1990,7 +2379,10 @@ function getFlaggedKeywords() {
           'Flagged'
         );
 
-      if (flaggedSheet) {
+
+      if (
+        flaggedSheet
+      ) {
 
         var data =
           flaggedSheet
@@ -2014,15 +2406,21 @@ function getFlaggedKeywords() {
 
           if (
             word &&
-            keywords.indexOf(word) === -1
+            keywords.indexOf(
+              word
+            ) === -1
           ) {
 
             keywords.push(
               word
             );
+
           }
+
         }
+
       }
+
     }
 
   } catch (e) {
@@ -2031,29 +2429,48 @@ function getFlaggedKeywords() {
       'Notice reading Flagged tab: ' +
       e.toString()
     );
+
   }
 
+
   return keywords;
+
 }
 
 
 /* ============================================================================
  * SUBMISSIONS SHEET LOGGER
+ * ============================================================================
+ *
+ * Logs the standard submission object to the Submissions sheet.
+ *
+ * CANONICAL STRUCTURE:
+ *
+ * 1  Lead ID
+ * 2  Timestamp
+ * 3  Status
+ * 4  Name
+ * 5  Email
+ * 6  Phone
+ * 7  Address
+ * 8  Preferred Contact
+ * 9  Have You Used RD3 Tech Before?
+ * 10 Category
+ * 11 Subject / Situation
+ * 12 Message / Goal
+ * 13 Timeframe
+ * 14 Is Spam
+ * 15 Review Required
+ * 16 Spam Score
+ * 17 Flag Reasons
  * ========================================================================== */
 
-/**
- * Logs the standard submission object.
- *
- * New fields:
- * - Address
- * - Preferred Contact
- * - Relationship
- */
-function logToSheet(submission) {
+function logToSheet(
+  submission
+) {
 
   submission =
     submission || {};
-
 
   var lock =
     LockService.getScriptLock();
@@ -2061,7 +2478,9 @@ function logToSheet(submission) {
 
   try {
 
-    lock.waitLock(10000);
+    lock.waitLock(
+      10000
+    );
 
 
     var ss =
@@ -2071,10 +2490,11 @@ function logToSheet(submission) {
     if (!ss) {
 
       Logger.log(
-        '❌ logToSheet Failed: Target spreadsheet instance not resolved.'
+        'logToSheet Failed: Target spreadsheet instance not resolved.'
       );
 
       return;
+
     }
 
 
@@ -2093,25 +2513,13 @@ function logToSheet(submission) {
       );
 
 
-    /*
-     * Create the sheet if it does not exist.
-     */
-    if (!sheet) {
+    /* ------------------------------------------------------------------------
+     * CANONICAL HEADERS
+     * ---------------------------------------------------------------------- */
 
-      Logger.log(
-        "⚠️ Submission sheet '" +
-        sheetName +
-        "' not found. Creating it."
-      );
+    var headers =
+      [
 
-
-      sheet =
-        ss.insertSheet(
-          sheetName
-        );
-
-
-      sheet.appendRow([
         'Lead ID',
         'Timestamp',
         'Status',
@@ -2120,7 +2528,7 @@ function logToSheet(submission) {
         'Phone',
         'Address',
         'Preferred Contact',
-        'Relationship',
+        'Have You Used RD3 Tech Before?',
         'Category',
         'Subject / Situation',
         'Message / Goal',
@@ -2129,80 +2537,283 @@ function logToSheet(submission) {
         'Review Required',
         'Spam Score',
         'Flag Reasons'
-      ]);
+
+      ];
+
+
+    /* ------------------------------------------------------------------------
+     * CREATE SHEET IF REQUIRED
+     * ---------------------------------------------------------------------- */
+
+    if (!sheet) {
+
+      Logger.log(
+        "Submission sheet '" +
+        sheetName +
+        "' not found. Creating it."
+      );
+
+      sheet =
+        ss.insertSheet(
+          sheetName
+        );
+
     }
 
 
-    /*
-     * Append submission.
-     */
-    sheet.appendRow([
+    /* ------------------------------------------------------------------------
+     * ENSURE ENOUGH COLUMNS
+     * ---------------------------------------------------------------------- */
 
-      submission.id ||
-        'LEAD-' +
-        Date.now(),
+    if (
+      sheet.getMaxColumns() <
+      headers.length
+    ) {
 
-      submission.timestamp ||
-        new Date().toISOString(),
+      sheet.insertColumnsAfter(
+        sheet.getMaxColumns(),
+        headers.length -
+        sheet.getMaxColumns()
+      );
 
-      submission.status ||
-        'NEW INQUIRY',
+    }
 
-      submission.name ||
-        'N/A',
 
-      submission.email ||
-        'N/A',
+    /* ------------------------------------------------------------------------
+     * SET CANONICAL HEADER ROW
+     * ---------------------------------------------------------------------- */
 
-      submission.phone ||
-        'N/A',
+    sheet
+      .getRange(
+        1,
+        1,
+        1,
+        headers.length
+      )
+      .setValues(
+        [
+          headers
+        ]
+      );
 
-      submission.address ||
-        'N/A',
 
-      submission.preferredContact ||
-        '',
+    /* ------------------------------------------------------------------------
+     * CLEAR OLD EXTRA COLUMNS
+     * ---------------------------------------------------------------------- */
 
-      submission.relationship ||
-        '',
+    var maxColumns =
+      sheet.getMaxColumns();
 
-      submission.category ||
-        submission.userType ||
-        'General Inquiry',
 
-      submission.subject ||
-        submission.situation ||
-        'N/A',
+    if (
+      maxColumns >
+      headers.length
+    ) {
 
-      submission.message ||
-        submission.achievement ||
-        '',
+      sheet
+        .getRange(
+          1,
+          headers.length + 1,
+          sheet.getMaxRows(),
+          maxColumns -
+          headers.length
+        )
+        .clearContent();
 
-      submission.timeframe ||
-        'N/A',
+    }
 
-      submission.isSpam
-        ? 'YES'
-        : 'NO',
 
-      submission.isReviewRequired
-        ? 'YES'
-        : 'NO',
+    /* ------------------------------------------------------------------------
+     * BUILD SUBMISSION ROW
+     * ---------------------------------------------------------------------- */
 
-      submission.spamScore ||
-        0,
+    var row =
+      [
 
-      submission.flagReasons ||
-        ''
-    ]);
+        /*
+         * 1. Lead ID
+         */
+        submission.id ||
+          'LEAD-' +
+          Date.now(),
+
+
+        /*
+         * 2. Timestamp
+         */
+        submission.timestamp ||
+          new Date().toISOString(),
+
+
+        /*
+         * 3. Status
+         */
+        submission.status ||
+          'NEW INQUIRY',
+
+
+        /*
+         * 4. Name
+         */
+        submission.name ||
+          'N/A',
+
+
+        /*
+         * 5. Email
+         */
+        submission.email ||
+          'N/A',
+
+
+        /*
+         * 6. Phone
+         */
+        submission.phone ||
+          'N/A',
+
+
+        /*
+         * 7. Address
+         */
+        submission.address ||
+          'N/A',
+
+
+        /*
+         * 8. Preferred Contact
+         */
+        submission.preferredContact ||
+          '',
+
+
+        /*
+         * 9. Have You Used RD3 Tech Before?
+         *
+         * Canonical field:
+         * usedBefore
+         */
+        submission.usedBefore ||
+          '',
+
+
+        /*
+         * 10. Category
+         */
+        submission.category ||
+          submission.userType ||
+          'General Inquiry',
+
+
+        /*
+         * 11. Subject / Situation
+         */
+        submission.subject ||
+          submission.situation ||
+          'N/A',
+
+
+        /*
+         * 12. Message / Goal
+         */
+        submission.message ||
+          submission.achievement ||
+          '',
+
+
+        /*
+         * 13. Timeframe
+         */
+        submission.timeframe ||
+          'N/A',
+
+
+        /*
+         * 14. Is Spam
+         */
+        submission.isSpam
+          ? 'YES'
+          : 'NO',
+
+
+        /*
+         * 15. Review Required
+         */
+        submission.isReviewRequired
+          ? 'YES'
+          : 'NO',
+
+
+        /*
+         * 16. Spam Score
+         */
+        submission.spamScore ||
+          0,
+
+
+        /*
+         * 17. Flag Reasons
+         */
+        submission.flagReasons ||
+          ''
+
+      ];
+
+
+    /* ------------------------------------------------------------------------
+     * VALIDATE COLUMN COUNT
+     * ---------------------------------------------------------------------- */
+
+    if (
+      row.length !==
+      headers.length
+    ) {
+
+      throw new Error(
+        'Submission column mismatch. ' +
+        'Headers = ' +
+        headers.length +
+        ', Row = ' +
+        row.length
+      );
+
+    }
+
+
+    /* ------------------------------------------------------------------------
+     * APPEND SUBMISSION
+     * ---------------------------------------------------------------------- */
+
+    var nextRow =
+      Math.max(
+        sheet.getLastRow() + 1,
+        2
+      );
+
+
+    sheet
+      .getRange(
+        nextRow,
+        1,
+        1,
+        row.length
+      )
+      .setValues(
+        [
+          row
+        ]
+      );
 
 
     SpreadsheetApp.flush();
 
 
     Logger.log(
-      '📊 Successfully logged submission ' +
-      submission.id +
+      'Successfully logged submission ' +
+      (
+        submission.id ||
+        row[0]
+      ) +
       " to tab '" +
       sheet.getName() +
       "'."
@@ -2212,40 +2823,60 @@ function logToSheet(submission) {
   } catch (err) {
 
     Logger.log(
-      '❌ logToSheet Error: ' +
+      'logToSheet Error: ' +
       err.toString()
     );
+
+    throw err;
+
 
   } finally {
 
     try {
+
       lock.releaseLock();
+
     } catch (e) {
-      // Lock was not held.
+
+      /*
+       * Lock was not held.
+       */
+
     }
+
   }
+
 }
 
-
-/* ============================================================================
+/*
+ * ============================================================================
  * EMAIL DISPATCH
- * ========================================================================== */
+ * ============================================================================
+ */
 
 function sendEmails(
   submission,
   evalResult
 ) {
 
+  /*
+   * Send the client confirmation first.
+   * This gives the customer immediate confirmation
+   * before the admin notification is processed.
+   */
+  sendClientConfirmation(
+    submission
+  );
+
+  /*
+   * Send the admin notification second.
+   */
   sendAdminNotification(
     submission,
     evalResult
   );
 
-  sendClientConfirmation(
-    submission
-  );
 }
-
 
 /* ============================================================================
  * ADMIN EMAIL
@@ -2263,12 +2894,18 @@ function sendAdminNotification(
     submission || {};
 
 
+  /* ------------------------------------------------------------------------
+   * ADMIN EMAIL
+   * ---------------------------------------------------------------------- */
+
   var adminEmail =
     (
       typeof CONFIG !== 'undefined' &&
       CONFIG.ADMIN_EMAIL
     )
-      ? CONFIG.ADMIN_EMAIL
+      ? String(
+          CONFIG.ADMIN_EMAIL
+        ).trim()
       : 'tom@rd3tech.com';
 
 
@@ -2290,6 +2927,10 @@ function sendAdminNotification(
       : senderName;
 
 
+  /* ------------------------------------------------------------------------
+   * CATEGORY
+   * ---------------------------------------------------------------------- */
+
   var categoryText =
     String(
       submission.category ||
@@ -2302,7 +2943,12 @@ function sendAdminNotification(
     categoryText.toUpperCase();
 
 
-  var flags = [];
+  /* ------------------------------------------------------------------------
+   * FLAGS
+   * ---------------------------------------------------------------------- */
+
+  var flags =
+    [];
 
 
   if (
@@ -2316,6 +2962,7 @@ function sendAdminNotification(
     flags.push(
       'REVIEW REQUIRED'
     );
+
   }
 
 
@@ -2330,6 +2977,7 @@ function sendAdminNotification(
     flags.push(
       'URGENT INQUIRY'
     );
+
   }
 
 
@@ -2344,15 +2992,24 @@ function sendAdminNotification(
     flags.push(
       'SPAM DETECTED'
     );
+
   }
 
 
+  /* ------------------------------------------------------------------------
+   * SUBJECT
+   * ---------------------------------------------------------------------- */
+
   var subjectPrefix =
     flags.length > 0
-      ? '⚠️ [' +
-        flags.join(' | ') +
+
+      ? '[' +
+        flags.join(
+          ' | '
+        ) +
         '] '
-      : '🚀 [NEW LEAD - ' +
+
+      : '[NEW LEAD - ' +
         upperCategory +
         '] ';
 
@@ -2394,6 +3051,10 @@ function sendAdminNotification(
     safeLeadName;
 
 
+  /* ------------------------------------------------------------------------
+   * BUILD ADMIN EMAIL
+   * ---------------------------------------------------------------------- */
+
   try {
 
     var template =
@@ -2406,65 +3067,89 @@ function sendAdminNotification(
     template.submission =
       submission;
 
+
     template.companyName =
       companyName;
+
 
     template.senderName =
       senderName;
 
+
     template.category =
       categoryText;
 
+
     template.userType =
       categoryText;
+
 
     template.name =
       submission.name ||
       'N/A';
 
+
     template.email =
       submission.email ||
       'N/A';
+
 
     template.phone =
       submission.phone ||
       'N/A';
 
+
     template.address =
       submission.address ||
       'N/A';
+
 
     template.preferredContact =
       submission.preferredContact ||
       '';
 
-    template.relationship =
-      submission.relationship ||
+
+    /*
+     * Have You Used RD3 Tech Before?
+     */
+    template.usedBefore =
+      submission.usedBefore ||
       '';
+
+
+    template.vUsedBefore =
+      submission.usedBefore ||
+      '';
+
 
     template.subject =
       submission.subject ||
       submission.situation ||
       'N/A';
 
+
     template.situation =
       submission.situation ||
       submission.subject ||
       'N/A';
+
 
     template.message =
       submission.message ||
       submission.achievement ||
       'N/A';
 
+
     template.achievement =
       submission.achievement ||
       submission.message ||
       'N/A';
 
+
     template.timeframe =
       submission.timeframe ||
       'N/A';
+
 
     template.evalResult =
       evalResult || {
@@ -2496,8 +3181,13 @@ function sendAdminNotification(
         flags:
           submission.flags ||
           []
+
       };
 
+
+    /* ----------------------------------------------------------------------
+     * RENDER TEMPLATE
+     * -------------------------------------------------------------------- */
 
     var htmlBody =
       template
@@ -2505,14 +3195,20 @@ function sendAdminNotification(
         .getContent();
 
 
-    var emailOptions = {
+    /* ----------------------------------------------------------------------
+     * EMAIL OPTIONS
+     * -------------------------------------------------------------------- */
 
-      htmlBody:
-        htmlBody,
+    var emailOptions =
+      {
 
-      name:
-        senderName
-    };
+        htmlBody:
+          htmlBody,
+
+        name:
+          senderName
+
+      };
 
 
     /*
@@ -2528,8 +3224,13 @@ function sendAdminNotification(
         String(
           submission.email
         ).trim();
+
     }
 
+
+    /* ----------------------------------------------------------------------
+     * SEND ADMIN EMAIL
+     * -------------------------------------------------------------------- */
 
     GmailApp.sendEmail(
       adminEmail,
@@ -2540,7 +3241,7 @@ function sendAdminNotification(
 
 
     Logger.log(
-      '✅ Admin Notification sent successfully to: ' +
+      'Admin Notification sent successfully to: ' +
       adminEmail
     );
 
@@ -2548,10 +3249,29 @@ function sendAdminNotification(
   } catch (adminErr) {
 
     Logger.log(
-      '❌ Admin Email Error: ' +
+      'ADMIN EMAIL FAILED'
+    );
+
+    Logger.log(
+      'Recipient: ' +
+      adminEmail
+    );
+
+    Logger.log(
+      'Subject: ' +
+      adminSubject
+    );
+
+    Logger.log(
+      'Error: ' +
       adminErr.toString()
     );
+
+
+    throw adminErr;
+
   }
+
 }
 
 
@@ -2569,6 +3289,10 @@ function sendClientConfirmation(
   submission =
     submission || {};
 
+
+  /* ------------------------------------------------------------------------
+   * CLIENT EMAIL
+   * ---------------------------------------------------------------------- */
 
   var clientEmail =
     submission.email
@@ -2589,7 +3313,9 @@ function sendClientConfirmation(
       typeof CONFIG !== 'undefined' &&
       CONFIG.ADMIN_EMAIL
     )
-      ? CONFIG.ADMIN_EMAIL
+      ? String(
+          CONFIG.ADMIN_EMAIL
+        ).trim()
       : 'tom@rd3tech.com';
 
 
@@ -2611,9 +3337,10 @@ function sendClientConfirmation(
       : senderName;
 
 
-  /*
-   * Validate client email.
-   */
+  /* ------------------------------------------------------------------------
+   * VALIDATE CLIENT EMAIL
+   * ---------------------------------------------------------------------- */
+
   if (
     !isValidEmailAddress(
       clientEmail
@@ -2621,14 +3348,19 @@ function sendClientConfirmation(
   ) {
 
     Logger.log(
-      "❌ Skipped Client Email: Invalid email address ('" +
+      "Skipped Client Email: Invalid email address ('" +
       clientEmail +
       "')."
     );
 
     return;
+
   }
 
+
+  /* ------------------------------------------------------------------------
+   * BUILD CLIENT EMAIL
+   * ---------------------------------------------------------------------- */
 
   try {
 
@@ -2647,62 +3379,88 @@ function sendClientConfirmation(
     template.submission =
       submission;
 
+
     template.companyName =
       companyName;
 
+
     template.senderName =
       senderName;
+
 
     template.name =
       submission.name ||
       'N/A';
 
+
     template.email =
       clientEmail;
+
 
     template.phone =
       submission.phone ||
       'N/A';
 
+
     template.address =
       submission.address ||
       'N/A';
+
 
     template.preferredContact =
       submission.preferredContact ||
       '';
 
-    template.relationship =
-      submission.relationship ||
+
+    /*
+     * Have You Used RD3 Tech Before?
+     */
+    template.usedBefore =
+      submission.usedBefore ||
       '';
+
+
+    template.vUsedBefore =
+      submission.usedBefore ||
+      '';
+
 
     template.category =
       submission.category ||
       submission.userType ||
       'General Inquiry';
 
+
     template.subject =
       submission.subject ||
       'N/A';
+
 
     template.situation =
       submission.situation ||
       submission.subject ||
       'N/A';
 
+
     template.message =
       submission.message ||
       'N/A';
+
 
     template.achievement =
       submission.achievement ||
       submission.message ||
       'N/A';
 
+
     template.timeframe =
       submission.timeframe ||
       'N/A';
 
+
+    /* ----------------------------------------------------------------------
+     * RENDER TEMPLATE
+     * -------------------------------------------------------------------- */
 
     var htmlBody =
       template
@@ -2710,11 +3468,16 @@ function sendClientConfirmation(
         .getContent();
 
 
+    /* ----------------------------------------------------------------------
+     * SEND CLIENT EMAIL
+     * -------------------------------------------------------------------- */
+
     GmailApp.sendEmail(
       clientEmail,
       clientSubject,
       'Please enable HTML to view this email.',
       {
+
         htmlBody:
           htmlBody,
 
@@ -2723,12 +3486,13 @@ function sendClientConfirmation(
 
         replyTo:
           adminEmail
+
       }
     );
 
 
     Logger.log(
-      '✅ Client Confirmation Email successfully sent to: ' +
+      'Client Confirmation Email successfully sent to: ' +
       clientEmail
     );
 
@@ -2736,10 +3500,12 @@ function sendClientConfirmation(
   } catch (err) {
 
     Logger.log(
-      '❌ Client Email Error: ' +
+      'Client Email Error: ' +
       err.toString()
     );
+
   }
+
 }
 
 
@@ -2755,6 +3521,7 @@ function getTargetSpreadsheetInstance() {
   ) {
 
     return getTargetSpreadsheet();
+
   }
 
 
@@ -2775,12 +3542,15 @@ function getTargetSpreadsheetInstance() {
         'Failed opening spreadsheet by ID: ' +
         e.toString()
       );
+
     }
+
   }
 
 
   return SpreadsheetApp
     .getActiveSpreadsheet();
+
 }
 
 
@@ -2796,7 +3566,9 @@ function getTargetSpreadsheetInstance() {
 function parseIncomingRequest(e) {
 
   if (!e) {
+
     return {};
+
   }
 
 
@@ -2818,17 +3590,22 @@ function parseIncomingRequest(e) {
         content
       );
 
+
     } catch (err) {
 
       /*
        * Fall through to parameters.
        */
       Logger.log(
-        'ℹ️ POST body was not JSON; falling back to request parameters.'
+        'POST body was not JSON; falling back to request parameters.'
       );
+
     }
+
   }
 
 
-  return e.parameter || {};
+  return e.parameter ||
+    {};
+
 }
