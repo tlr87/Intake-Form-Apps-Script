@@ -610,17 +610,19 @@ function setupTestSheet() {
     sheet = ss.insertSheet("Test");
   }
 
-  var headers = [
-    "Timestamp",
-    "Name",
-    "Email",
-    "Phone",
-    "Address",
-    "I’m contacting RD3 Tech as",
-    "Subject / Category",
-    "What are you trying to achieve?",
-    "How soon do you need help?"
-  ];
+var headers = [
+  "Timestamp",
+  "Name",
+  "Email",
+  "Phone",
+  "Address",
+  "Preferred Contact",
+  "Relationship",
+  "I’m contacting RD3 Tech as",
+  "Subject / Category",
+  "What are you trying to achieve?",
+  "How soon do you need help?"
+];
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
@@ -650,14 +652,16 @@ function setupTestSheet() {
   if (sheet.getLastRow() < 2) {
     sheet.getRange(2, 1, 1, headers.length).setValues([[
       new Date(),
-      "Douglas Adams",
-      "tom.revill@gmail.com",
-      "021 555 0042",
-      "Mill Road, Cambridge, Cambridgeshire, England",
-      "Home user",
-      "Something Broken? — Fix a problem",
-      "TV aerial needs tuning",
-      "As soon as possible"
+        "Douglas Adams",
+        "tom.revill@gmail.com",
+        "021 555 0042",
+        "Mill Road, Cambridge, Cambridgeshire, England",
+        "Email",
+        "New",
+        "Home user",
+        "Something Broken? — Fix a problem",
+        "TV aerial needs tuning; Nintendo broken",
+        "As soon as possible"
     ]]);
   }
 
@@ -666,7 +670,6 @@ function setupTestSheet() {
 
   Logger.log("✅ Test sheet is ready.");
 }
-
 
 /**
  * ============================================================================
@@ -716,6 +719,10 @@ function testLiveRequestFromTestSheet() {
     .getRange(2, 1, 1, lastColumn)
     .getValues()[0];
 
+  // ==========================================================================
+  // Build test data object from the Test sheet headers
+  // ==========================================================================
+
   var testData = {};
 
   for (var i = 0; i < headers.length; i++) {
@@ -726,39 +733,54 @@ function testLiveRequestFromTestSheet() {
     }
   }
 
-  /*
-   * Build the same field names that the production EmailService
-   * already understands.
-   */
-var payload = {
-  name: values[1] || "",
-  email: values[2] || "",
-  phone: values[3] || "",
-  address: values[4] || "",
+  // ==========================================================================
+  // Build the production-style payload
+  //
+  // These field names must match what EmailService.processSubmission()
+  // expects from the real website submission.
+  // ==========================================================================
 
-  userType: values[5] || "",
-
-  situation: values[6] || "",
-
-  achievement: values[7] || "",
-
-  timeframe: values[8] || "",
-
+ var payload = {
+  name: String(values[1] || "").trim(),
+  email: String(values[2] || "").trim(),
+  phone: String(values[3] || "").trim(),
+  address: String(values[4] || "").trim(),
+  preferredContact: String(values[5] || "").trim(),
+  relationship: String(values[6] || "").trim(),
+  userType: String(values[7] || "").trim(),
+  situation: String(values[8] || "").trim(),
+  achievement: String(values[9] || "").trim(),
+  timeframe: String(values[10] || "").trim(),
   honeypot: ""
 };
+
+  // ==========================================================================
+  // Logging
+  // ==========================================================================
 
   Logger.log("==================================================");
   Logger.log("🧪 LIVE REQUEST TEST");
   Logger.log("==================================================");
+
   Logger.log("Test payload:");
   Logger.log(JSON.stringify(payload, null, 2));
 
-  /*
-   * IMPORTANT:
-   * Do not use the Test sheet timestamp.
-   *
-   * processSubmission() creates the real processing timestamp.
-   */
+  // Explicitly confirm the two new fields
+  Logger.log("--------------------------------------------------");
+  Logger.log("New Field Check:");
+  Logger.log(
+    "Preferred Contact: " +
+      (payload.preferredContact || "[NOT PROVIDED]")
+  );
+  Logger.log(
+    "Relationship: " +
+      (payload.relationship || "[NOT PROVIDED]")
+  );
+  Logger.log("--------------------------------------------------");
+
+  // ==========================================================================
+  // Confirm the real EmailService pipeline is available
+  // ==========================================================================
 
   if (
     typeof EmailService === "undefined" ||
@@ -769,16 +791,25 @@ var payload = {
     );
   }
 
+  // ==========================================================================
+  // Process through the REAL production pipeline
+  // ==========================================================================
+
   var result = EmailService.processSubmission(payload);
+
+  // ==========================================================================
+  // Final logging
+  // ==========================================================================
 
   Logger.log("==================================================");
   Logger.log("✅ LIVE REQUEST TEST COMPLETE");
   Logger.log("==================================================");
+
+  Logger.log("Final result:");
   Logger.log(JSON.stringify(result, null, 2));
 
   return result;
 }
-
 
 
 /**

@@ -1,45 +1,33 @@
-
 /**
  * EmailService.gs - Lead Ingestion & Processing Engine for RD3 Tech
+ *
+ * Responsibilities:
+ * - Receive public webhook submissions
+ * - Receive Google Form submissions
+ * - Normalise incoming field names
+ * - Evaluate spam / review / urgency
+ * - Build a standard submission object
+ * - Log submissions to the Submissions sheet
+ * - Send admin notification
+ * - Send client confirmation
+ *
+ * Current taxonomy source:
+ *   TaxonomyService.getTaxonomy()
+ *       ↓
+ *   KEYWORD_TAXONOMY_JSON
+ *       ↓
+ *   evaluateSubmission()
+ *
+ * Default fallback:
+ *   CONFIG.DEFAULT_TAXONOMY
+ *
+ * No new keyword taxonomy logic should be added here.
  */
 
 
-/**
- * ============================================================================
- * LEGACY / RETIRED TAXONOMY FUNCTIONS
- * ============================================================================
- *
- * The functions below belong to the previous keyword/category system.
- *
- * They are NOT part of the current live taxonomy workflow.
- *
- * Current active taxonomy:
- *
- * Config.gs
- *     ↓
- * CONFIG.DEFAULT_TAXONOMY
- *     ↓
- * TaxonomyService
- *     ↓
- * KEYWORD_TAXONOMY_JSON
- *     ↓
- * evaluateSubmission()
- *
- * The current taxonomy manages:
- *   - spamKeywords
- *   - reviewKeywords
- *   - urgentKeywords
- *
- * The older KEYWORD_TAXONOMY category system and Flagged sheet logic
- * are retained temporarily for legacy compatibility only.
- *
- * DO NOT add new keyword filtering logic here.
- *
- * These functions may be removed once the project has been checked to
- * confirm that no other legacy code still depends on them.
- * ============================================================================
- */
-
+/* ============================================================================
+ * PUBLIC SERVICE API
+ * ========================================================================== */
 
 var EmailService = {
   doPost: doPost,
@@ -54,33 +42,21 @@ var EmailService = {
 };
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * PUBLIC SUBMISSION DUPLICATE / RATE LIMIT
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Prevents the same public request from being repeatedly submitted
+ * within a short period.
  *
- * Prevents the same public request from being repeatedly submitted within
- * a short period.
+ * Uses Script Cache rather than a spreadsheet/database.
  *
- * This is intentionally lightweight and uses Script Cache rather than a
- * spreadsheet or database, so it does not add significant processing overhead.
+ * This protection is applied only to:
+ * - doPost()
+ * - onFormSubmit()
  *
- * Apps Script web-app requests do not provide the client's IP address in the
- * event object, so this protection uses submitted contact details to create
- * a temporary duplicate fingerprint.
- *
- * This protection is applied only to public entry points:
- *   - doPost()
- *   - onFormSubmit()
- *
- * The Test sheet calls processSubmission() directly and is therefore not
- * affected by this rate-limit check.
- *
- * Cache window: 60 seconds
- *
- * NOTE:
- * This is duplicate/replay protection, not a full anti-bot system.
- * ============================================================================
+ * Direct calls to processSubmission() are not rate limited.
  */
 function checkSubmissionRateLimit(rawData) {
 
@@ -110,10 +86,6 @@ function checkSubmissionRateLimit(rawData) {
     ''
   ).replace(/\D/g, '');
 
-  /*
-   * If there is not enough identifying information, allow the request
-   * through to the normal spam/honeypot evaluation.
-   */
   if (!email && !name && !phone) {
     return true;
   }
@@ -129,15 +101,16 @@ function checkSubmissionRateLimit(rawData) {
     Utilities.Charset.UTF_8
   );
 
-  var fingerprint = Utilities.base64Encode(digest)
-    .replace(/[^a-zA-Z0-9]/g, '');
+  var fingerprint =
+    Utilities.base64Encode(digest)
+      .replace(/[^a-zA-Z0-9]/g, '');
 
-  var cache = CacheService.getScriptCache();
-  var cacheKey = 'submission_rate_' + fingerprint;
+  var cache =
+    CacheService.getScriptCache();
 
-  /*
-   * Duplicate request detected within the active window.
-   */
+  var cacheKey =
+    'submission_rate_' + fingerprint;
+
   if (cache.get(cacheKey)) {
 
     Logger.log(
@@ -147,135 +120,214 @@ function checkSubmissionRateLimit(rawData) {
     return false;
   }
 
-/**
- * Cache window:
- *
- *     CONFIG.SUBMISSION_RATE_LIMIT_SECONDS
- *
- * Default:
- *     60 seconds
-  * */
-var rateLimitSeconds =
-  (
-    typeof CONFIG !== 'undefined' &&
-    Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS) > 0
-  )
-    ? Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS)
-    : 60;
+  var rateLimitSeconds =
+    (
+      typeof CONFIG !== 'undefined' &&
+      Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS) > 0
+    )
+      ? Number(CONFIG.SUBMISSION_RATE_LIMIT_SECONDS)
+      : 60;
 
-cache.put(
-  cacheKey,
-  '1',
-  rateLimitSeconds
-);
+  cache.put(
+    cacheKey,
+    '1',
+    rateLimitSeconds
+  );
 
-return true;
+  return true;
 }
 
 
+/* ============================================================================
+ * EMAIL VALIDATION
+ * ========================================================================== */
+
 /**
- * ============================================================================
- * EMAIL ADDRESS VALIDATION
- * ============================================================================
- *
- * Validates customer-provided email addresses before they are used for:
- *
- *   - Admin Reply-To
- *   - Client confirmation delivery
- *
- * This is intentionally a simple practical validation. The purpose is to
- * reject clearly invalid values rather than attempt full RFC email parsing.
- * ============================================================================
+ * Practical email validation.
  */
 function isValidEmailAddress(email) {
 
-  var value = String(email || '').trim();
+  var value =
+    String(email || '').trim();
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 
+/* ============================================================================
+ * EMAIL NORMALISATION
+ * ========================================================================== */
+
 /**
- * ============================================================================
+ * Converts common email formats into a plain email address.
+ *
+ * Examples:
+ *
+ * [tom@example.com](mailto:tom@example.com)
+ *     ↓
+ * tom@example.com
+ *
+ * mailto:tom@example.com
+ *     ↓
+ * tom@example.com
+ */
+function normalizeEmailAddress(value) {
+
+  var email =
+    String(value || '').trim();
+
+  if (!email) {
+    return '';
+  }
+
+  /*
+   * Handle Markdown mailto links.
+   */
+  var markdownMatch =
+    email.match(
+      /^\[([^\]]+)\]\(\s*mailto:([^)]+)\)$/i
+    );
+
+  if (markdownMatch) {
+    email =
+      markdownMatch[2]
+        .trim();
+  }
+
+  /*
+   * Handle plain mailto links.
+   */
+  if (/^mailto:/i.test(email)) {
+
+    email =
+      email
+        .replace(/^mailto:/i, '')
+        .trim();
+  }
+
+  /*
+   * Remove accidental surrounding angle brackets.
+   */
+  email =
+    email
+      .replace(/^<|>$/g, '')
+      .trim();
+
+  return email;
+}
+
+
+/* ============================================================================
  * PUBLIC WEBHOOK
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Handles public POST requests.
  */
 function doPost(e) {
 
-  Logger.log("=== 🌐 WEBHOOK DOPOST TRIGGERED ===");
+  Logger.log(
+    '=== 🌐 WEBHOOK DOPOST TRIGGERED ==='
+  );
 
   try {
 
-    var data = parseIncomingRequest(e);
+    var data =
+      parseIncomingRequest(e);
 
     Logger.log(
-      "📥 Parsed Webhook Data: " +
+      '📥 Parsed Webhook Data: ' +
       JSON.stringify(data)
     );
 
     /*
-     * Apply duplicate/rate-limit protection before any processing,
-     * spreadsheet writes, or emails.
+     * Duplicate / rate-limit protection.
      */
     if (!checkSubmissionRateLimit(data)) {
 
       Logger.log(
-        "⚠️ Public submission blocked by duplicate/rate-limit protection."
+        '⚠️ Public submission blocked by duplicate/rate-limit protection.'
       );
 
       return ContentService
         .createTextOutput(
           JSON.stringify({
-            status: "blocked",
-            message: "Duplicate submission detected. Please wait before submitting again."
+            status: 'blocked',
+            message:
+              'Duplicate submission detected. Please wait before submitting again.'
           })
         )
-        .setMimeType(ContentService.MimeType.JSON);
+        .setMimeType(
+          ContentService.MimeType.JSON
+        );
     }
 
-    var result = processSubmission(data);
+    var result =
+      processSubmission(data);
 
     return ContentService
       .createTextOutput(
         JSON.stringify({
-          status: "success",
-          id: result ? result.id : "N/A"
+          status: 'success',
+          id:
+            result
+              ? result.id
+              : 'N/A'
         })
       )
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
 
   } catch (err) {
 
     Logger.log(
-      "❌ CRITICAL ERROR in doPost: " +
+      '❌ CRITICAL ERROR in doPost: ' +
       err.toString()
     );
 
     return ContentService
       .createTextOutput(
         JSON.stringify({
-          status: "error",
-          message: err.toString()
+          status: 'error',
+          message:
+            err.toString()
         })
       )
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
   }
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * GOOGLE FORM SUBMISSION TRIGGER
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Handles Google Form submissions.
+ *
+ * Supports:
+ * - e.namedValues
+ * - e.response
+ * - e.values + e.range
+ * - e.parameter
+ * - latest spreadsheet row fallback
  */
 function onFormSubmit(e) {
 
-  Logger.log("=== 🚀 FORM SUBMISSION TRIGGERED ===");
+  Logger.log(
+    '=== 🚀 FORM SUBMISSION TRIGGERED ==='
+  );
 
   try {
 
     var data = {};
 
+    /*
+     * Google Form trigger.
+     */
     if (
       e &&
       e.namedValues &&
@@ -283,29 +335,49 @@ function onFormSubmit(e) {
     ) {
 
       Logger.log(
-        "📥 Form Data Source: e.namedValues"
+        '📥 Form Data Source: e.namedValues'
       );
 
-      data = e.namedValues;
+      data =
+        e.namedValues;
 
-    } else if (e && e.response) {
+    /*
+     * Form response object.
+     */
+    } else if (
+      e &&
+      e.response
+    ) {
 
       Logger.log(
-        "📥 Form Data Source: e.response"
+        '📥 Form Data Source: e.response'
       );
 
       var itemResponses =
         e.response.getItemResponses();
 
-      for (var i = 0; i < itemResponses.length; i++) {
+      for (
+        var i = 0;
+        i < itemResponses.length;
+        i++
+      ) {
 
-        data[
+        var item =
           itemResponses[i]
-            .getItem()
-            .getTitle()
-        ] = itemResponses[i].getResponse();
+            .getItem();
+
+        var title =
+          item
+            .getTitle();
+
+        data[title] =
+          itemResponses[i]
+            .getResponse();
       }
 
+    /*
+     * Spreadsheet form trigger.
+     */
     } else if (
       e &&
       e.values &&
@@ -313,21 +385,27 @@ function onFormSubmit(e) {
     ) {
 
       Logger.log(
-        "📥 Form Data Source: e.values (Spreadsheet row)"
+        '📥 Form Data Source: e.values (Spreadsheet row)'
       );
 
-      var sheet = e.range.getSheet();
+      var sheet =
+        e.range.getSheet();
 
-      var headers = sheet
-        .getRange(
-          1,
-          1,
-          1,
-          sheet.getLastColumn()
-        )
-        .getValues()[0];
+      var headers =
+        sheet
+          .getRange(
+            1,
+            1,
+            1,
+            sheet.getLastColumn()
+          )
+          .getValues()[0];
 
-      for (var h = 0; h < headers.length; h++) {
+      for (
+        var h = 0;
+        h < headers.length;
+        h++
+      ) {
 
         if (headers[h]) {
 
@@ -335,41 +413,51 @@ function onFormSubmit(e) {
             headers[h]
               .toString()
               .trim()
-          ] = e.values[h];
+          ] =
+            e.values[h];
         }
       }
 
-    } else if (e && e.parameter) {
+    /*
+     * Web request parameter fallback.
+     */
+    } else if (
+      e &&
+      e.parameter
+    ) {
 
       Logger.log(
-        "📥 Form Data Source: e.parameter"
+        '📥 Form Data Source: e.parameter'
       );
 
-      data = e.parameter;
+      data =
+        e.parameter;
 
+    /*
+     * Last-resort spreadsheet fallback.
+     */
     } else {
 
       Logger.log(
-        "⚠️ Trigger event object missing or empty. " +
-        "Fetching latest row from Sheet as safety fallback..."
+        '⚠️ Trigger event object missing or empty. ' +
+        'Fetching latest row from Sheet as safety fallback...'
       );
 
       return processLatestSheetRow();
     }
 
     Logger.log(
-      "📦 Parsed Raw Payload: " +
+      '📦 Parsed Raw Payload: ' +
       JSON.stringify(data)
     );
 
     /*
-     * Apply the same duplicate/rate-limit protection to actual
-     * Google Form submissions.
+     * Duplicate / rate-limit protection.
      */
     if (!checkSubmissionRateLimit(data)) {
 
       Logger.log(
-        "⚠️ Form submission blocked by duplicate/rate-limit protection."
+        '⚠️ Form submission blocked by duplicate/rate-limit protection.'
       );
 
       return;
@@ -380,17 +468,19 @@ function onFormSubmit(e) {
   } catch (err) {
 
     Logger.log(
-      "❌ CRITICAL ERROR in onFormSubmit: " +
+      '❌ CRITICAL ERROR in onFormSubmit: ' +
       err.toString()
     );
   }
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * FORM RESPONSES SHEET FALLBACK
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Processes the latest row from the Google Form response sheet.
  */
 function processLatestSheetRow() {
 
@@ -400,14 +490,19 @@ function processLatestSheetRow() {
   if (!ss) {
 
     Logger.log(
-      "❌ Fallback Failed: Spreadsheet target unreachable."
+      '❌ Fallback Failed: Spreadsheet target unreachable.'
     );
 
     return;
   }
 
   var sheetName =
-    CONFIG.SHEET_NAME_GOOGLE;
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.SHEET_NAME_GOOGLE
+    )
+      ? CONFIG.SHEET_NAME_GOOGLE
+      : 'Form Responses 1';
 
   var sheet =
     ss.getSheetByName(sheetName) ||
@@ -419,11 +514,14 @@ function processLatestSheetRow() {
   if (lastRow < 2) {
 
     Logger.log(
-      "⚠️ Fallback Skipped: Sheet has no submission data rows."
+      '⚠️ Fallback Skipped: Sheet has no submission data rows.'
     );
 
     return;
   }
+
+  var lastColumn =
+    sheet.getLastColumn();
 
   var headers =
     sheet
@@ -431,7 +529,7 @@ function processLatestSheetRow() {
         1,
         1,
         1,
-        sheet.getLastColumn()
+        lastColumn
       )
       .getValues()[0];
 
@@ -441,83 +539,57 @@ function processLatestSheetRow() {
         lastRow,
         1,
         1,
-        sheet.getLastColumn()
+        lastColumn
       )
       .getValues()[0];
 
   var payload = {};
 
-  for (var i = 0; i < headers.length; i++) {
+  for (
+    var i = 0;
+    i < headers.length;
+    i++
+  ) {
 
-    payload[
-      headers[i]
-        .toString()
-        .trim()
-    ] = values[i];
+    if (headers[i]) {
+
+      payload[
+        headers[i]
+          .toString()
+          .trim()
+      ] =
+        values[i];
+    }
   }
 
   Logger.log(
-    "📄 Extracted Fallback Payload from Row " +
+    '📄 Extracted Fallback Payload from Row ' +
     lastRow +
-    ": " +
+    ': ' +
     JSON.stringify(payload)
   );
 
   return processSubmission(payload);
 }
 
-/**
- * ============================================================================
- * EMAIL ADDRESS NORMALISATION
- * ============================================================================
- */
-function normalizeEmailAddress(value) {
 
-  var email = String(value || '').trim();
-
-  if (!email) {
-    return '';
-  }
-
-  // Handle Markdown mailto links:
-  // [name@example.com](mailto:name@example.com)
-  var markdownMatch = email.match(
-    /^\[([^\]]+)\]\(mailto:([^)]+)\)$/i
-  );
-
-  if (markdownMatch) {
-    email = markdownMatch[2].trim();
-  }
-
-  // Handle plain mailto links:
-  // mailto:name@example.com
-  if (/^mailto:/i.test(email)) {
-    email = email.replace(/^mailto:/i, '').trim();
-  }
-
-  return email;
-}
-
-
-
-
-
-
-/**
- * ============================================================================
+/* ============================================================================
  * MAIN SUBMISSION PROCESSOR
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Converts any supported incoming payload into the standard submission object.
  */
 function processSubmission(rawData) {
 
   Logger.log(
-    "=== ⚙️ PROCESSING SUBMISSION ==="
+    '=== ⚙️ PROCESSING SUBMISSION ==='
   );
 
   if (!rawData) {
 
     Logger.log(
-      "⚠️ processSubmission called without rawData payload."
+      '⚠️ processSubmission called without rawData payload.'
     );
 
     rawData = {};
@@ -533,7 +605,7 @@ function processSubmission(rawData) {
     );
 
   Logger.log(
-    "🔍 Evaluation Result: " +
+    '🔍 Evaluation Result: ' +
     JSON.stringify(evaluation)
   );
 
@@ -543,70 +615,90 @@ function processSubmission(rawData) {
       CONFIG.TIMEZONE
     )
       ? CONFIG.TIMEZONE
-      : "Pacific/Auckland";
+      : 'Pacific/Auckland';
 
   var timestamp =
     Utilities.formatDate(
       new Date(),
       tz,
-      "yyyy-MM-dd HH:mm:ss"
+      'yyyy-MM-dd HH:mm:ss'
     );
 
 
+  /* --------------------------------------------------------------------------
+   * UNIVERSAL VALUE EXTRACTOR
+   * ------------------------------------------------------------------------ */
+
   function getValue(keys, defaultValue) {
 
-    for (var i = 0; i < keys.length; i++) {
+    /*
+     * 1. Exact raw-key match.
+     */
+    for (
+      var i = 0;
+      i < keys.length;
+      i++
+    ) {
 
-      var k = keys[i];
+      var key =
+        keys[i];
 
       if (
         rawData &&
-        rawData[k] !== undefined &&
-        rawData[k] !== null &&
-        String(rawData[k]).trim() !== ''
+        rawData[key] !== undefined &&
+        rawData[key] !== null &&
+        String(rawData[key]).trim() !== ''
       ) {
 
-        var v = rawData[k];
+        var value =
+          rawData[key];
 
-        return Array.isArray(v)
-          ? v.join(", ").trim()
-          : String(v).trim();
+        return Array.isArray(value)
+          ? value.join(', ').trim()
+          : String(value).trim();
       }
     }
 
-    for (var j = 0; j < keys.length; j++) {
+    /*
+     * 2. Normalised-key match.
+     */
+    for (
+      var j = 0;
+      j < keys.length;
+      j++
+    ) {
 
-      var cleanK =
-        keys[j]
-          .toLowerCase()
-          .replace(/[^a-z0-9_]/g, "_")
-          .replace(/_+/g, "_")
-          .replace(/^_+|_+$/g, "");
+      var cleanKey =
+        normalizeKey(keys[j]);
 
       if (
         extractedMap &&
-        extractedMap[cleanK] !== undefined &&
-        extractedMap[cleanK] !== null &&
-        String(extractedMap[cleanK]).trim() !== ''
+        extractedMap[cleanKey] !== undefined &&
+        extractedMap[cleanKey] !== null &&
+        String(extractedMap[cleanKey]).trim() !== ''
       ) {
 
         return String(
-          extractedMap[cleanK]
+          extractedMap[cleanKey]
         ).trim();
       }
     }
 
     /*
-     * Search by partial fuzzy match.
+     * 3. Fuzzy key match.
      */
-    for (var rawKey in rawData) {
+    for (
+      var rawKey in rawData
+    ) {
 
-      if (!rawData.hasOwnProperty(rawKey)) {
+      if (
+        !rawData.hasOwnProperty(rawKey)
+      ) {
         continue;
       }
 
-      var lowerKey =
-        rawKey.toLowerCase();
+      var lowerRawKey =
+        normalizeKey(rawKey);
 
       for (
         var p = 0;
@@ -615,25 +707,28 @@ function processSubmission(rawData) {
       ) {
 
         var targetKey =
-          keys[p].toLowerCase();
+          normalizeKey(keys[p]);
 
         if (
           targetKey.length > 2 &&
-          lowerKey.indexOf(targetKey) !== -1
+          (
+            lowerRawKey.indexOf(targetKey) !== -1 ||
+            targetKey.indexOf(lowerRawKey) !== -1
+          )
         ) {
 
-          var val =
+          var fuzzyValue =
             rawData[rawKey];
 
           if (
-            val !== undefined &&
-            val !== null &&
-            String(val).trim() !== ''
+            fuzzyValue !== undefined &&
+            fuzzyValue !== null &&
+            String(fuzzyValue).trim() !== ''
           ) {
 
-            return Array.isArray(val)
-              ? val.join(", ").trim()
-              : String(val).trim();
+            return Array.isArray(fuzzyValue)
+              ? fuzzyValue.join(', ').trim()
+              : String(fuzzyValue).trim();
           }
         }
       }
@@ -642,6 +737,10 @@ function processSubmission(rawData) {
     return defaultValue;
   }
 
+
+  /* --------------------------------------------------------------------------
+   * STANDARD FIELD EXTRACTION
+   * ------------------------------------------------------------------------ */
 
   var nameVal =
     getValue(
@@ -654,14 +753,10 @@ function processSubmission(rawData) {
         'your_name',
         'Name'
       ],
-      "N/A"
+      'N/A'
     );
 
 
-  /*
-   * Extract email address with fallback to scanning all input fields
-   * for an '@' symbol.
-   */
   var emailVal =
     getValue(
       [
@@ -674,16 +769,24 @@ function processSubmission(rawData) {
         'Your Email',
         'contact_email'
       ],
-      "N/A"
+      ''
     );
 
-    emailVal = normalizeEmailAddress(emailVal);
+  emailVal =
+    normalizeEmailAddress(emailVal);
+
+
+  /*
+   * Fallback: scan all submitted values for an email address.
+   */
   if (
-    emailVal === "N/A" &&
+    !isValidEmailAddress(emailVal) &&
     rawData
   ) {
 
-    for (var rawK in rawData) {
+    for (
+      var rawK in rawData
+    ) {
 
       if (
         !rawData.hasOwnProperty(rawK)
@@ -696,16 +799,23 @@ function processSubmission(rawData) {
           rawData[rawK]
         ).trim();
 
+      var possibleEmail =
+        normalizeEmailAddress(rawV);
+
       if (
-        rawV.indexOf("@") !== -1 &&
-        rawV.indexOf(".") !== -1 &&
-        rawV.indexOf(" ") === -1
+        isValidEmailAddress(possibleEmail)
       ) {
 
-        emailVal = rawV;
+        emailVal =
+          possibleEmail;
+
         break;
       }
     }
+  }
+
+  if (!emailVal) {
+    emailVal = 'N/A';
   }
 
 
@@ -716,11 +826,13 @@ function processSubmission(rawData) {
         'entry_1285532466',
         'phone',
         'phoneNumber',
+        'phone_number',
         'contact_number',
         'mobile',
-        'Phone'
+        'Phone',
+        'Contact Number'
       ],
-      "N/A"
+      'N/A'
     );
 
 
@@ -730,27 +842,80 @@ function processSubmission(rawData) {
         'entry.1293794731',
         'entry_1293794731',
         'address',
+        'address_location',
         'location',
-        'Address'
+        'Address',
+        'Address / Location'
       ],
-      "N/A"
+      'N/A'
     );
 
 
+  /*
+   * NEW:
+   * Preferred Contact
+   */
+  var preferredContactVal =
+    getValue(
+      [
+        'entry.PREFERRED_CONTACT_ID',
+        'entry_PREFERRED_CONTACT_ID',
+        'preferredContact',
+        'preferred_contact',
+        'Preferred Contact',
+        'preferred contact',
+        'contact_preference',
+        'contact preference'
+      ],
+      ''
+    );
+
+
+  /*
+   * NEW:
+   * Relationship
+   */
+  var relationshipVal =
+    getValue(
+      [
+        'entry.RELATIONSHIP_ID',
+        'entry_RELATIONSHIP_ID',
+        'relationship',
+        'Relationship',
+        'customer_relationship'
+      ],
+      ''
+    );
+
+
+  /*
+   * Category.
+   *
+   * IMPORTANT:
+   * We now explicitly support the actual Google Form field:
+   *
+   * Category
+   */
   var categoryVal =
     getValue(
       [
         'entry.343301224',
         'entry_343301224',
         'userType',
+        'user_type',
         'category',
-        'usertype'
+        'Category',
+        'User Type',
+        'user type'
       ],
       evaluation.category ||
-      "General Inquiry"
+      'General Inquiry'
     );
 
 
+  /*
+   * Situation.
+   */
   var situationVal =
     getValue(
       [
@@ -758,52 +923,69 @@ function processSubmission(rawData) {
         'entry_650060968',
         'situation',
         'subject',
-        'Situation'
+        'Situation',
+        'Subject'
       ],
-      "New Website Lead"
+      'New Website Lead'
     );
 
 
+  /*
+   * Goal / Desired Outcome.
+   *
+   * IMPORTANT:
+   * This is kept separate from timeframe.
+   */
   var messageVal =
     getValue(
       [
         'entry.483026621',
         'entry_483026621',
-        'entry.1883892334',
-        'entry_1883892334',
         'what_are_you_trying_to_achieve',
         'What Are You Trying To Achieve?',
+        'What are you trying to achieve?',
+        'Goal / Desired Outcome',
+        'Goal',
         'achievement',
         'message',
-        'goal',
         'details',
         'desired_outcome'
       ],
-      ""
+      ''
     );
 
 
+  /*
+   * Timeframe.
+   *
+   * IMPORTANT:
+   * Do NOT include the goal field here as a fallback.
+   */
   var timeframeVal =
     getValue(
       [
         'entry.1883892334',
         'entry_1883892334',
-        'entry.483026621',
-        'entry_483026621',
         'how_soon_do_you_need_help',
         'How Soon Do You Need Help?',
+        'How soon do you need help?',
+        'Timeframe',
         'timeframe',
         'urgency',
         'timeline'
       ],
-      "N/A"
+      'N/A'
     );
 
+
+  /* --------------------------------------------------------------------------
+   * STANDARD SUBMISSION OBJECT
+   * ------------------------------------------------------------------------ */
 
   var submission = {
 
     id:
-      "LEAD-" +
+      'LEAD-' +
       Date.now(),
 
     timestamp:
@@ -821,26 +1003,32 @@ function processSubmission(rawData) {
     address:
       addressVal,
 
-    subject:
-      situationVal,
+    preferredContact:
+      preferredContactVal,
 
-    message:
-      messageVal,
-
-    situation:
-      situationVal,
-
-    achievement:
-      messageVal,
-
-    timeframe:
-      timeframeVal,
+    relationship:
+      relationshipVal,
 
     category:
       categoryVal,
 
     userType:
       categoryVal,
+
+    subject:
+      situationVal,
+
+    situation:
+      situationVal,
+
+    message:
+      messageVal,
+
+    achievement:
+      messageVal,
+
+    timeframe:
+      timeframeVal,
 
     isSpam:
       evaluation.isSpam || false,
@@ -859,8 +1047,8 @@ function processSubmission(rawData) {
         evaluation.flagReasons &&
         evaluation.flagReasons.length
       )
-        ? evaluation.flagReasons.join(" | ")
-        : "",
+        ? evaluation.flagReasons.join(' | ')
+        : '',
 
     reasons:
       evaluation.flagReasons || [],
@@ -870,47 +1058,83 @@ function processSubmission(rawData) {
 
     status:
       evaluation.statusLabel ||
-      "NEW INQUIRY",
+      'NEW INQUIRY',
 
     rawData:
       JSON.stringify(rawData)
   };
 
 
+  /* --------------------------------------------------------------------------
+   * LOGGING
+   * ------------------------------------------------------------------------ */
+
   Logger.log(
-    "👤 Extracted Lead Profile:"
+    '👤 Extracted Lead Profile:'
   );
 
   Logger.log(
-    "   - Name: " +
+    '   - Name: ' +
     submission.name
   );
 
   Logger.log(
-    "   - Email: " +
+    '   - Email: ' +
     submission.email
   );
 
   Logger.log(
-    "   - Phone: " +
+    '   - Phone: ' +
     submission.phone
   );
 
   Logger.log(
-    "   - Category: " +
+    '   - Preferred Contact: ' +
+    submission.preferredContact
+  );
+
+  Logger.log(
+    '   - Relationship: ' +
+    submission.relationship
+  );
+
+  Logger.log(
+    '   - Category: ' +
     submission.category
   );
 
   Logger.log(
-    "   - Status: " +
+    '   - Situation: ' +
+    submission.situation
+  );
+
+  Logger.log(
+    '   - Goal: ' +
+    submission.message
+  );
+
+  Logger.log(
+    '   - Timeframe: ' +
+    submission.timeframe
+  );
+
+  Logger.log(
+    '   - Status: ' +
     submission.status
   );
 
 
+  /*
+   * Write submission.
+   */
   logToSheet(
     submission
   );
 
+
+  /*
+   * Send notifications.
+   */
   sendEmails(
     submission,
     evaluation
@@ -918,17 +1142,32 @@ function processSubmission(rawData) {
 
 
   Logger.log(
-    "=== ✅ SUBMISSION PROCESSING COMPLETE ==="
+    '=== ✅ SUBMISSION PROCESSING COMPLETE ==='
   );
 
   return submission;
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * INPUT NORMALISATION
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Converts incoming keys into predictable lowercase underscore keys.
+ */
+function normalizeKey(key) {
+
+  return String(key || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+
+/**
+ * Builds a normalised map of incoming data.
  */
 function normalizeInputKeys(rawData) {
 
@@ -938,75 +1177,74 @@ function normalizeInputKeys(rawData) {
     return map;
   }
 
-  for (var key in rawData) {
+  for (
+    var key in rawData
+  ) {
 
-    if (!rawData.hasOwnProperty(key)) {
+    if (
+      !rawData.hasOwnProperty(key)
+    ) {
       continue;
     }
 
     var cleanKey =
-      key
-        .toString()
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "_")
-        .replace(/_+/g, "_")
-        .replace(/^_+|_+$/g, "");
+      normalizeKey(key);
 
-    var val =
+    var value =
       rawData[key];
 
-    if (Array.isArray(val)) {
-      val = val.join(", ");
+    if (Array.isArray(value)) {
+
+      value =
+        value.join(', ');
     }
 
     map[cleanKey] =
-      String(val || '').trim();
+      String(
+        value || ''
+      ).trim();
   }
 
   return map;
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * SUBMISSION EVALUATION
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Evaluates:
+ * - Honeypot
+ * - Review keywords
+ * - Spam keywords
+ * - Urgent keywords
+ * - Multiple URLs
+ * - Suspicious phone formats
+ *
+ * Taxonomy is loaded from TaxonomyService first.
  */
-function evaluateSubmission(rawData, map) {
+function evaluateSubmission(
+  rawData,
+  map
+) {
 
   var flagReasons = [];
+
   var spamScore = 0;
+
   var isSpam = false;
+
   var isReviewRequired = false;
+
   var isUrgent = false;
 
 
-  /**
-   * ============================================================================
-   * TAXONOMY LOADING
-   * ============================================================================
-   *
-   * Live taxonomy:
-   *
-   *   Script Properties → KEYWORD_TAXONOMY_JSON
-   *
-   * The live taxonomy is retrieved through:
-   *
-   *   TaxonomyService.getTaxonomy()
-   *
-   * If a live taxonomy category is unavailable or empty, that category
-   * falls back to the corresponding category in:
-   *
-   *   CONFIG.DEFAULT_TAXONOMY
-   *
-   * This keeps Config.gs as the single source of default taxonomy values
-   * while allowing the Taxonomy Editor to control the live taxonomy.
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * TAXONOMY
+   * ------------------------------------------------------------------------ */
 
   var taxonomy = {};
-
 
   if (
     typeof TaxonomyService !== 'undefined' &&
@@ -1018,13 +1256,25 @@ function evaluateSubmission(rawData, map) {
   }
 
 
+  var defaultTaxonomy =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.DEFAULT_TAXONOMY
+    )
+      ? CONFIG.DEFAULT_TAXONOMY
+      : {};
+
+
   var spamKeywords =
     (
       taxonomy.spamKeywords &&
       taxonomy.spamKeywords.length
     )
       ? taxonomy.spamKeywords
-      : CONFIG.DEFAULT_TAXONOMY.spamKeywords;
+      : (
+          defaultTaxonomy.spamKeywords ||
+          []
+        );
 
 
   var reviewKeywords =
@@ -1033,7 +1283,10 @@ function evaluateSubmission(rawData, map) {
       taxonomy.reviewKeywords.length
     )
       ? taxonomy.reviewKeywords
-      : CONFIG.DEFAULT_TAXONOMY.reviewKeywords;
+      : (
+          defaultTaxonomy.reviewKeywords ||
+          []
+        );
 
 
   var urgentKeywords =
@@ -1042,62 +1295,73 @@ function evaluateSubmission(rawData, map) {
       taxonomy.urgentKeywords.length
     )
       ? taxonomy.urgentKeywords
-      : CONFIG.DEFAULT_TAXONOMY.urgentKeywords;
+      : (
+          defaultTaxonomy.urgentKeywords ||
+          []
+        );
 
 
-  /**
-   * ============================================================================
-   * INPUT EXTRACTION
-   * ============================================================================
-   */
+  /* --------------------------------------------------------------------------
+   * VALUE EXTRACTION
+   * ------------------------------------------------------------------------ */
 
   function extractValue(keys) {
 
-    for (var i = 0; i < keys.length; i++) {
+    /*
+     * Exact match.
+     */
+    for (
+      var i = 0;
+      i < keys.length;
+      i++
+    ) {
 
-      var k =
+      var key =
         keys[i];
 
       if (
         rawData &&
-        rawData[k] !== undefined &&
-        rawData[k] !== null &&
-        String(rawData[k]).trim() !== ''
+        rawData[key] !== undefined &&
+        rawData[key] !== null &&
+        String(rawData[key]).trim() !== ''
       ) {
 
-        var v =
-          rawData[k];
+        var value =
+          rawData[key];
 
-        return Array.isArray(v)
-          ? v.join(" ").trim()
-          : String(v).trim();
+        return Array.isArray(value)
+          ? value.join(' ').trim()
+          : String(value).trim();
       }
     }
 
 
-    for (var j = 0; j < keys.length; j++) {
+    /*
+     * Normalised match.
+     */
+    for (
+      var j = 0;
+      j < keys.length;
+      j++
+    ) {
 
-      var cleanK =
-        keys[j]
-          .toLowerCase()
-          .replace(/[^a-z0-9_]/g, "_")
-          .replace(/_+/g, "_")
-          .replace(/^_+|_+$/g, "");
+      var cleanKey =
+        normalizeKey(keys[j]);
 
       if (
         map &&
-        map[cleanK] !== undefined &&
-        map[cleanK] !== null &&
-        String(map[cleanK]).trim() !== ''
+        map[cleanKey] !== undefined &&
+        map[cleanKey] !== null &&
+        String(map[cleanKey]).trim() !== ''
       ) {
 
         return String(
-          map[cleanK]
+          map[cleanKey]
         ).trim();
       }
     }
 
-    return "";
+    return '';
   }
 
 
@@ -1109,9 +1373,10 @@ function evaluateSubmission(rawData, map) {
         'what_are_you_trying_to_achieve',
         'What Are You Trying To Achieve?',
         'What are you trying to achieve?',
+        'Goal / Desired Outcome',
+        'Goal',
         'achievement',
         'message',
-        'goal',
         'details',
         'desired_outcome'
       ]
@@ -1126,6 +1391,7 @@ function evaluateSubmission(rawData, map) {
         'how_soon_do_you_need_help',
         'How Soon Do You Need Help?',
         'How soon do you need help?',
+        'Timeframe',
         'timeframe',
         'urgency',
         'timeline'
@@ -1133,30 +1399,32 @@ function evaluateSubmission(rawData, map) {
     );
 
 
-  /**
-   * ============================================================================
-   * 1. HONEYPOT CHECK
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * HONEYPOT
+   * ------------------------------------------------------------------------ */
 
   var hpField =
     (
       typeof CONFIG !== 'undefined' &&
       CONFIG.HONEYPOT_FIELD
     )
-      ? CONFIG.HONEYPOT_FIELD.toLowerCase()
-      : "website";
+      ? String(
+          CONFIG.HONEYPOT_FIELD
+        ).toLowerCase()
+      : 'website';
 
 
   if (
-    (map[hpField] &&
-      map[hpField] !== "") ||
-    map['honeypot'] ||
-    map['website_url_hp']
+    (
+      map[hpField] &&
+      map[hpField] !== ''
+    ) ||
+    map.honeypot ||
+    map.website_url_hp
   ) {
 
-  
+    isSpam = true;
+
     spamScore += 5;
 
     flagReasons.push(
@@ -1167,23 +1435,9 @@ function evaluateSubmission(rawData, map) {
   }
 
 
-  /**
-   * ============================================================================
-   * 2. REVIEW KEYWORD EVALUATION
-   * ============================================================================
-   *
-   * Short keywords (3 characters or fewer):
-   *
-   *   Whole-word matching.
-   *
-   * Longer keywords:
-   *
-   *   Phrase/substring matching with simple word-stem support.
-   *
-   * All matches are retained.
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * REVIEW KEYWORDS
+   * ------------------------------------------------------------------------ */
 
   var goalLower =
     goalText.toLowerCase();
@@ -1191,7 +1445,9 @@ function evaluateSubmission(rawData, map) {
   var goalMatches = [];
 
 
-  if (goalLower.length > 0) {
+  if (
+    goalLower.length > 0
+  ) {
 
     for (
       var g = 0;
@@ -1209,29 +1465,41 @@ function evaluateSubmission(rawData, map) {
         continue;
       }
 
-      var isMatched = false;
+      var isMatched =
+        false;
 
 
-      if (rawKw.length <= 3) {
+      /*
+       * Short keywords use whole-word matching.
+       */
+      if (
+        rawKw.length <= 3
+      ) {
 
         var rx =
           new RegExp(
             '(^|[^a-z0-9])' +
-            rawKw +
+            escapeRegExp(rawKw) +
             '($|[^a-z0-9])',
             'i'
           );
 
-        if (rx.test(goalLower)) {
+        if (
+          rx.test(goalLower)
+        ) {
+
           isMatched = true;
         }
 
+      /*
+       * Longer keywords use phrase/stem matching.
+       */
       } else {
 
         var stemKw =
           rawKw.replace(
             /(ing|ers?|ed|es?)$/i,
-            ""
+            ''
           );
 
         if (
@@ -1260,39 +1528,35 @@ function evaluateSubmission(rawData, map) {
   }
 
 
-  if (goalMatches.length > 0) {
+  if (
+    goalMatches.length > 0
+  ) {
 
     isReviewRequired = true;
 
     flagReasons.push(
-      "Goal / Desired Outcome matched review keyword(s): " +
-      goalMatches.join(", ")
+      'Goal / Desired Outcome matched review keyword(s): ' +
+      goalMatches.join(', ')
     );
   }
 
 
-  /**
-   * ============================================================================
-   * 3. SPAM KEYWORD EVALUATION
-   * ============================================================================
-   *
-   * Spam keywords come from the live taxonomy first, with
-   * CONFIG.DEFAULT_TAXONOMY.spamKeywords as the fallback.
-   * ============================================================================
-   */
+  /* --------------------------------------------------------------------------
+   * SPAM KEYWORDS
+   * ------------------------------------------------------------------------ */
 
-
-  var combinedKeywordText = (
-    goalText +
-    " " +
-    timeframeText +
-    " " +
-    Object.keys(map || {})
-      .map(function (key) {
-        return map[key];
-      })
-      .join(" ")
-  ).toLowerCase();
+  var combinedKeywordText =
+    (
+      goalText +
+      ' ' +
+      timeframeText +
+      ' ' +
+      Object.keys(map || {})
+        .map(function(key) {
+          return map[key];
+        })
+        .join(' ')
+    ).toLowerCase();
 
 
   var spamMatches = [];
@@ -1326,28 +1590,23 @@ function evaluateSubmission(rawData, map) {
   }
 
 
-  if (spamMatches.length > 0) {
+  if (
+    spamMatches.length > 0
+  ) {
 
     spamScore +=
       spamMatches.length * 30;
 
     flagReasons.push(
-      "Spam keyword(s) matched: " +
-      spamMatches.join(", ")
+      'Spam keyword(s) matched: ' +
+      spamMatches.join(', ')
     );
   }
 
 
-  /**
-   * ============================================================================
-   * 4. TIMEFRAME / URGENCY EVALUATION
-   * ============================================================================
-   *
-   * Urgent keywords come from the live taxonomy first, with
-   * CONFIG.DEFAULT_TAXONOMY.urgentKeywords as the fallback.
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * URGENT KEYWORDS
+   * ------------------------------------------------------------------------ */
 
   var timeframeLower =
     timeframeText.toLowerCase();
@@ -1383,24 +1642,23 @@ function evaluateSubmission(rawData, map) {
   }
 
 
-  if (matchedUrgent.length > 0) {
+  if (
+    matchedUrgent.length > 0
+  ) {
 
     isUrgent = true;
 
     flagReasons.push(
       "Urgent timeframe detected: '" +
-      matchedUrgent.join(", ") +
+      matchedUrgent.join(', ') +
       "'"
     );
   }
 
 
-  /**
-   * ============================================================================
-   * 5. MULTIPLE URL CHECK
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * MULTIPLE URL CHECK
+   * ------------------------------------------------------------------------ */
 
   var textParts = [
     goalText,
@@ -1408,7 +1666,9 @@ function evaluateSubmission(rawData, map) {
   ];
 
 
-  for (var k in map) {
+  for (
+    var k in map
+  ) {
 
     if (
       map.hasOwnProperty(k) &&
@@ -1425,45 +1685,49 @@ function evaluateSubmission(rawData, map) {
 
   var combinedText =
     textParts
-      .join(" ")
+      .join(' ')
       .toLowerCase();
 
 
-var urlMatch =
-  combinedText.match(
-    /https?:\/\/[^\s]+|www\.[^\s]+/gi
-  );
-
-var linkCount =
-  urlMatch
-    ? urlMatch.length
-    : 0;
-
-if (linkCount > 1) {
-
-  spamScore += 2;
-
-  flagReasons.push(
-    "Contains multiple URLs (" +
-    linkCount +
-    ")"
-  );
-}
+  var urlMatch =
+    combinedText.match(
+      /https?:\/\/[^\s]+|www\.[^\s]+/gi
+    );
 
 
-  /**
-   * ============================================================================
-   * 6. PHONE VALIDATION
-   * ============================================================================
-   */
+  var linkCount =
+    urlMatch
+      ? urlMatch.length
+      : 0;
 
+
+  if (
+    linkCount > 1
+  ) {
+
+    spamScore += 2;
+
+    isSpam = true;
+
+    flagReasons.push(
+      'Contains multiple URLs (' +
+      linkCount +
+      ')'
+    );
+  }
+
+
+  /* --------------------------------------------------------------------------
+   * PHONE VALIDATION
+   * ------------------------------------------------------------------------ */
 
   var phoneStr =
     String(
-      map['entry_1285532466'] ||
-      map['phone'] ||
-      map['mobile'] ||
-      map['entry.1285532466'] ||
+      map.entry_1285532466 ||
+      map.phone ||
+      map.phone_number ||
+      map.mobile ||
+      map.entry_1285532466 ||
       ''
     ).replace(
       /[^0-9]/g,
@@ -1471,7 +1735,9 @@ if (linkCount > 1) {
     );
 
 
-  if (phoneStr.length > 0) {
+  if (
+    phoneStr.length > 0
+  ) {
 
     if (
       /^0+$/.test(phoneStr) ||
@@ -1481,67 +1747,84 @@ if (linkCount > 1) {
       spamScore += 1;
 
       flagReasons.push(
-        "Suspicious phone format: " + phoneStr
+        'Suspicious phone format: ' +
+        phoneStr
       );
     }
   }
 
 
-  /**
-   * ============================================================================
-   * 7. THRESHOLD & STATUS LABEL
-   * ============================================================================
-   */
-
+  /* --------------------------------------------------------------------------
+   * THRESHOLD
+   * ------------------------------------------------------------------------ */
 
   var threshold =
     (
       typeof CONFIG !== 'undefined' &&
       CONFIG.SPAM_THRESHOLD
     )
-      ? CONFIG.SPAM_THRESHOLD
+      ? Number(
+          CONFIG.SPAM_THRESHOLD
+        )
       : 3;
 
 
-  if (spamScore >= threshold) {
+  if (
+    spamScore >= threshold
+  ) {
+
     isSpam = true;
   }
 
 
+  /* --------------------------------------------------------------------------
+   * STATUS
+   * ------------------------------------------------------------------------ */
+
   var statusParts = [];
 
 
-  if (isReviewRequired) {
+  if (
+    isReviewRequired
+  ) {
+
     statusParts.push(
-      "REVIEW REQUIRED"
+      'REVIEW REQUIRED'
     );
   }
 
 
-  if (isSpam) {
+  if (
+    isSpam
+  ) {
+
     statusParts.push(
-      "SPAM DETECTED"
+      'SPAM DETECTED'
     );
   }
 
 
-  if (isUrgent) {
+  if (
+    isUrgent
+  ) {
+
     statusParts.push(
-      "URGENT"
+      'URGENT'
     );
   }
 
 
   var statusLabel =
     statusParts.length > 0
-      ? statusParts.join(" | ")
-      : "NEW INQUIRY";
+      ? statusParts.join(' | ')
+      : 'NEW INQUIRY';
 
 
-  // Legacy category classifier disabled.
-  // var category = categorizeLead(combinedText);
-
-  var category = "General Inquiry";
+  /*
+   * Current category system intentionally disabled.
+   */
+  var category =
+    'General Inquiry';
 
 
   return {
@@ -1585,15 +1868,29 @@ if (linkCount > 1) {
 }
 
 
+/* ============================================================================
+ * REGEX HELPER
+ * ========================================================================== */
+
+function escapeRegExp(value) {
+
+  return String(value || '')
+    .replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&'
+    );
+}
+
+
+/* ============================================================================
+ * LEGACY CATEGORY CLASSIFIER
+ * ========================================================================== */
+
 /**
- * LEGACY: Previous category classifier.
+ * Legacy compatibility only.
  *
- * This is not part of the current live Spam / Review / Urgent
- * taxonomy workflow.
- *
- * Retained temporarily for legacy compatibility only.
- **/
- /*
+ * Not used by the current evaluation workflow.
+ */
 function categorizeLead(text) {
 
   if (
@@ -1602,11 +1899,12 @@ function categorizeLead(text) {
     !CONFIG.DEFAULT_TAXONOMY.categories
   ) {
 
-    return "General Inquiry";
+    return 'General Inquiry';
   }
 
   var categories =
     CONFIG.DEFAULT_TAXONOMY.categories;
+
 
   for (
     var i = 0;
@@ -1624,7 +1922,7 @@ function categorizeLead(text) {
 
       for (
         var k = 0;
-        k < cat.keywords.length; 
+        k < cat.keywords.length;
         k++
       ) {
 
@@ -1641,20 +1939,18 @@ function categorizeLead(text) {
     }
   }
 
-  return "General Inquiry";
+  return 'General Inquiry';
 }
-*/
+
+
+/* ============================================================================
+ * LEGACY FLAGGED KEYWORDS
+ * ========================================================================== */
 
 /**
- * LEGACY: Previous Flagged-sheet / CONFIG.FLAGGED_KEYWORDS source.
+ * Retained temporarily for compatibility.
  *
- * Current live evaluation uses:
- *
- *   TaxonomyService.getTaxonomy()
- *       ↓
- *   KEYWORD_TAXONOMY_JSON
- *
- * Do not add new live keyword filtering logic here.
+ * Current live taxonomy does NOT use this function.
  */
 function getFlaggedKeywords() {
 
@@ -1667,18 +1963,18 @@ function getFlaggedKeywords() {
     )
       ? CONFIG.FLAGGED_KEYWORDS.slice()
       : [
-          "crypto",
-          "seo",
-          "invest",
-          "loans",
-          "casino",
-          "viagra",
-          "guest post",
-          "backlinks",
-          "tv tune",
-          "tv tuning",
-          "tv tuned",
-          "tv"
+          'crypto',
+          'seo',
+          'invest',
+          'loans',
+          'casino',
+          'viagra',
+          'guest post',
+          'backlinks',
+          'tv tune',
+          'tv tuning',
+          'tv tuned',
+          'tv'
         ];
 
 
@@ -1691,7 +1987,7 @@ function getFlaggedKeywords() {
 
       var flaggedSheet =
         ss.getSheetByName(
-          "Flagged"
+          'Flagged'
         );
 
       if (flaggedSheet) {
@@ -1700,6 +1996,7 @@ function getFlaggedKeywords() {
           flaggedSheet
             .getDataRange()
             .getValues();
+
 
         for (
           var i = 1;
@@ -1713,6 +2010,7 @@ function getFlaggedKeywords() {
             )
               .toLowerCase()
               .trim();
+
 
           if (
             word &&
@@ -1730,7 +2028,7 @@ function getFlaggedKeywords() {
   } catch (e) {
 
     Logger.log(
-      "Notice reading Flagged tab: " +
+      'Notice reading Flagged tab: ' +
       e.toString()
     );
   }
@@ -1739,34 +2037,46 @@ function getFlaggedKeywords() {
 }
 
 
+/* ============================================================================
+ * SUBMISSIONS SHEET LOGGER
+ * ========================================================================== */
+
 /**
- * ============================================================================
- * LEGACY / CURRENT SUBMISSIONS LOGGER
- * ============================================================================
+ * Logs the standard submission object.
+ *
+ * New fields:
+ * - Address
+ * - Preferred Contact
+ * - Relationship
  */
 function logToSheet(submission) {
 
   submission =
     submission || {};
 
+
   var lock =
     LockService.getScriptLock();
+
 
   try {
 
     lock.waitLock(10000);
 
+
     var ss =
       getTargetSpreadsheetInstance();
+
 
     if (!ss) {
 
       Logger.log(
-        "❌ logToSheet Failed: Target spreadsheet instance not resolved."
+        '❌ logToSheet Failed: Target spreadsheet instance not resolved.'
       );
 
       return;
     }
+
 
     var sheetName =
       (
@@ -1774,118 +2084,153 @@ function logToSheet(submission) {
         CONFIG.SHEET_NAME
       )
         ? CONFIG.SHEET_NAME
-        : "Submissions";
+        : 'Submissions';
+
 
     var sheet =
-  ss.getSheetByName(sheetName);
+      ss.getSheetByName(
+        sheetName
+      );
 
-if (!sheet) {
 
-  Logger.log(
-    "⚠️ Submission sheet '" +
-    sheetName +
-    "' not found. Creating it."
-  );
+    /*
+     * Create the sheet if it does not exist.
+     */
+    if (!sheet) {
 
-  sheet =
-    ss.insertSheet(sheetName);
+      Logger.log(
+        "⚠️ Submission sheet '" +
+        sheetName +
+        "' not found. Creating it."
+      );
 
-  sheet.appendRow([
-    "Lead ID",
-    "Timestamp",
-    "Status",
-    "Name",
-    "Email",
-    "Phone",
-    "Category",
-    "Subject / Situation",
-    "Message / Goal",
-    "Timeframe",
-    "Is Spam",
-    "Review Required",
-    "Spam Score",
-    "Flag Reasons"
-  ]);
-}
 
+      sheet =
+        ss.insertSheet(
+          sheetName
+        );
+
+
+      sheet.appendRow([
+        'Lead ID',
+        'Timestamp',
+        'Status',
+        'Name',
+        'Email',
+        'Phone',
+        'Address',
+        'Preferred Contact',
+        'Relationship',
+        'Category',
+        'Subject / Situation',
+        'Message / Goal',
+        'Timeframe',
+        'Is Spam',
+        'Review Required',
+        'Spam Score',
+        'Flag Reasons'
+      ]);
+    }
+
+
+    /*
+     * Append submission.
+     */
     sheet.appendRow([
 
       submission.id ||
-        "LEAD-" +
+        'LEAD-' +
         Date.now(),
 
       submission.timestamp ||
         new Date().toISOString(),
 
       submission.status ||
-        "NEW INQUIRY",
+        'NEW INQUIRY',
 
       submission.name ||
-        "N/A",
+        'N/A',
 
       submission.email ||
-        "N/A",
+        'N/A',
 
       submission.phone ||
-        "N/A",
+        'N/A',
+
+      submission.address ||
+        'N/A',
+
+      submission.preferredContact ||
+        '',
+
+      submission.relationship ||
+        '',
 
       submission.category ||
         submission.userType ||
-        "General Inquiry",
+        'General Inquiry',
 
       submission.subject ||
         submission.situation ||
-        "N/A",
+        'N/A',
 
       submission.message ||
         submission.achievement ||
-        "",
+        '',
 
       submission.timeframe ||
-        "N/A",
+        'N/A',
 
       submission.isSpam
-        ? "YES"
-        : "NO",
+        ? 'YES'
+        : 'NO',
 
       submission.isReviewRequired
-        ? "YES"
-        : "NO",
+        ? 'YES'
+        : 'NO',
 
       submission.spamScore ||
         0,
 
       submission.flagReasons ||
-        ""
+        ''
     ]);
+
 
     SpreadsheetApp.flush();
 
-    lock.releaseLock();
 
     Logger.log(
-      "📊 Successfully logged submission " +
+      '📊 Successfully logged submission ' +
       submission.id +
       " to tab '" +
       sheet.getName() +
       "'."
     );
 
+
   } catch (err) {
 
     Logger.log(
-      "❌ logToSheet Error: " +
+      '❌ logToSheet Error: ' +
       err.toString()
     );
+
+  } finally {
+
+    try {
+      lock.releaseLock();
+    } catch (e) {
+      // Lock was not held.
+    }
   }
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * EMAIL DISPATCH
- * ============================================================================
- */
+ * ========================================================================== */
+
 function sendEmails(
   submission,
   evalResult
@@ -1902,10 +2247,12 @@ function sendEmails(
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * ADMIN EMAIL
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Sends the RD3 Tech admin notification.
  */
 function sendAdminNotification(
   submission,
@@ -1915,13 +2262,15 @@ function sendAdminNotification(
   submission =
     submission || {};
 
+
   var adminEmail =
     (
       typeof CONFIG !== 'undefined' &&
       CONFIG.ADMIN_EMAIL
     )
       ? CONFIG.ADMIN_EMAIL
-      : "tom@rd3tech.com";
+      : 'tom@rd3tech.com';
+
 
   var senderName =
     (
@@ -1929,7 +2278,8 @@ function sendAdminNotification(
       CONFIG.SENDER_NAME
     )
       ? CONFIG.SENDER_NAME
-      : "RD3 Tech";
+      : 'RD3 Tech';
+
 
   var companyName =
     (
@@ -1939,17 +2289,21 @@ function sendAdminNotification(
       ? CONFIG.COMPANY_NAME
       : senderName;
 
+
   var categoryText =
     String(
       submission.category ||
       submission.userType ||
-      "General Inquiry"
+      'General Inquiry'
     );
+
 
   var upperCategory =
     categoryText.toUpperCase();
 
+
   var flags = [];
+
 
   if (
     submission.isReviewRequired ||
@@ -1960,9 +2314,10 @@ function sendAdminNotification(
   ) {
 
     flags.push(
-      "REVIEW REQUIRED"
+      'REVIEW REQUIRED'
     );
   }
+
 
   if (
     submission.isUrgent ||
@@ -1973,9 +2328,10 @@ function sendAdminNotification(
   ) {
 
     flags.push(
-      "URGENT INQUIRY"
+      'URGENT INQUIRY'
     );
   }
+
 
   if (
     submission.isSpam ||
@@ -1986,56 +2342,66 @@ function sendAdminNotification(
   ) {
 
     flags.push(
-      "SPAM DETECTED"
+      'SPAM DETECTED'
     );
   }
 
+
   var subjectPrefix =
     flags.length > 0
-      ? "⚠️ [" +
-        flags.join(" | ") +
-        "] "
-      : "🚀 [NEW LEAD - " +
+      ? '⚠️ [' +
+        flags.join(' | ') +
+        '] '
+      : '🚀 [NEW LEAD - ' +
         upperCategory +
-        "] ";
+        '] ';
+
 
   /*
-   * Customer-controlled values are used in the email subject.
-   *
-   * Remove CR/LF characters so they cannot introduce additional
-   * email headers.
+   * Prevent customer-controlled CR/LF characters
+   * from affecting email headers.
    */
   var safeSubject =
     String(
       submission.subject ||
       submission.situation ||
       categoryText ||
-      "New Inquiry"
+      'New Inquiry'
     )
-      .replace(/[\r\n]+/g, " ")
+      .replace(
+        /[\r\n]+/g,
+        ' '
+      )
       .trim();
+
 
   var safeLeadName =
     String(
       submission.name ||
-      "N/A"
+      'N/A'
     )
-      .replace(/[\r\n]+/g, " ")
+      .replace(
+        /[\r\n]+/g,
+        ' '
+      )
       .trim();
+
 
   var adminSubject =
     subjectPrefix +
     safeSubject +
-    " - " +
+    ' - ' +
     safeLeadName;
+
 
   try {
 
     var template =
       HtmlService
         .createTemplateFromFile(
-          "AdminTemplate"
+          'AdminTemplate'
         );
+
 
     template.submission =
       submission;
@@ -2054,43 +2420,51 @@ function sendAdminNotification(
 
     template.name =
       submission.name ||
-      "N/A";
+      'N/A';
 
     template.email =
       submission.email ||
-      "N/A";
+      'N/A';
 
     template.phone =
       submission.phone ||
-      "N/A";
+      'N/A';
 
     template.address =
       submission.address ||
-      "N/A";
+      'N/A';
+
+    template.preferredContact =
+      submission.preferredContact ||
+      '';
+
+    template.relationship =
+      submission.relationship ||
+      '';
 
     template.subject =
       submission.subject ||
       submission.situation ||
-      "N/A";
+      'N/A';
 
     template.situation =
       submission.situation ||
       submission.subject ||
-      "N/A";
+      'N/A';
 
     template.message =
       submission.message ||
       submission.achievement ||
-      "N/A";
+      'N/A';
 
     template.achievement =
       submission.achievement ||
       submission.message ||
-      "N/A";
+      'N/A';
 
     template.timeframe =
       submission.timeframe ||
-      "N/A";
+      'N/A';
 
     template.evalResult =
       evalResult || {
@@ -2113,7 +2487,7 @@ function sendAdminNotification(
 
         flagReasons:
           submission.flagReasons ||
-          "",
+          '',
 
         reasons:
           submission.reasons ||
@@ -2124,10 +2498,12 @@ function sendAdminNotification(
           []
       };
 
+
     var htmlBody =
       template
         .evaluate()
         .getContent();
+
 
     var emailOptions = {
 
@@ -2138,8 +2514,9 @@ function sendAdminNotification(
         senderName
     };
 
+
     /*
-     * Only use a customer email as Reply-To when it passes validation.
+     * Only use customer email as Reply-To when valid.
      */
     if (
       isValidEmailAddress(
@@ -2153,32 +2530,37 @@ function sendAdminNotification(
         ).trim();
     }
 
+
     GmailApp.sendEmail(
       adminEmail,
       adminSubject,
-      "Please enable HTML in your email client to view this message.",
+      'Please enable HTML in your email client to view this message.',
       emailOptions
     );
 
+
     Logger.log(
-      "✅ Admin Notification sent successfully to: " +
+      '✅ Admin Notification sent successfully to: ' +
       adminEmail
     );
+
 
   } catch (adminErr) {
 
     Logger.log(
-      "❌ Admin Email Error: " +
+      '❌ Admin Email Error: ' +
       adminErr.toString()
     );
   }
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * CLIENT CONFIRMATION EMAIL
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Sends confirmation to the customer.
  */
 function sendClientConfirmation(
   submission
@@ -2187,12 +2569,20 @@ function sendClientConfirmation(
   submission =
     submission || {};
 
+
   var clientEmail =
     submission.email
       ? String(
           submission.email
         ).trim()
-      : "";
+      : '';
+
+
+  clientEmail =
+    normalizeEmailAddress(
+      clientEmail
+    );
+
 
   var adminEmail =
     (
@@ -2200,8 +2590,7 @@ function sendClientConfirmation(
       CONFIG.ADMIN_EMAIL
     )
       ? CONFIG.ADMIN_EMAIL
-      : "tom@rd3tech.com";
-
+      : 'tom@rd3tech.com';
 
 
   var senderName =
@@ -2210,7 +2599,8 @@ function sendClientConfirmation(
       CONFIG.SENDER_NAME
     )
       ? CONFIG.SENDER_NAME
-      : "RD3 Tech";
+      : 'RD3 Tech';
+
 
   var companyName =
     (
@@ -2222,7 +2612,7 @@ function sendClientConfirmation(
 
 
   /*
-   * Validate the client address before attempting delivery.
+   * Validate client email.
    */
   if (
     !isValidEmailAddress(
@@ -2239,17 +2629,20 @@ function sendClientConfirmation(
     return;
   }
 
+
   try {
 
     var clientSubject =
-      "We received your request - " +
+      'We received your request - ' +
       companyName;
+
 
     var template =
       HtmlService
         .createTemplateFromFile(
-          "ClientTemplate"
+          'ClientTemplate'
         );
+
 
     template.submission =
       submission;
@@ -2262,58 +2655,98 @@ function sendClientConfirmation(
 
     template.name =
       submission.name ||
-      "N/A";
+      'N/A';
 
     template.email =
       clientEmail;
 
     template.phone =
       submission.phone ||
-      "N/A";
+      'N/A';
+
+    template.address =
+      submission.address ||
+      'N/A';
+
+    template.preferredContact =
+      submission.preferredContact ||
+      '';
+
+    template.relationship =
+      submission.relationship ||
+      '';
+
+    template.category =
+      submission.category ||
+      submission.userType ||
+      'General Inquiry';
 
     template.subject =
       submission.subject ||
-      "N/A";
+      'N/A';
+
+    template.situation =
+      submission.situation ||
+      submission.subject ||
+      'N/A';
 
     template.message =
       submission.message ||
-      "N/A";
+      'N/A';
+
+    template.achievement =
+      submission.achievement ||
+      submission.message ||
+      'N/A';
+
+    template.timeframe =
+      submission.timeframe ||
+      'N/A';
+
 
     var htmlBody =
       template
         .evaluate()
         .getContent();
 
-      GmailApp.sendEmail(
+
+    GmailApp.sendEmail(
       clientEmail,
       clientSubject,
-      "Please enable HTML to view this email.",
+      'Please enable HTML to view this email.',
       {
-        htmlBody: htmlBody,
-        name: senderName,
-        replyTo: adminEmail
+        htmlBody:
+          htmlBody,
+
+        name:
+          senderName,
+
+        replyTo:
+          adminEmail
       }
     );
+
+
     Logger.log(
-      "✅ Client Confirmation Email successfully sent to: " +
+      '✅ Client Confirmation Email successfully sent to: ' +
       clientEmail
     );
+
 
   } catch (err) {
 
     Logger.log(
-      "❌ Client Email Error: " +
+      '❌ Client Email Error: ' +
       err.toString()
     );
   }
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * SPREADSHEET RESOLUTION
- * ============================================================================
- */
+ * ========================================================================== */
+
 function getTargetSpreadsheetInstance() {
 
   if (
@@ -2323,6 +2756,7 @@ function getTargetSpreadsheetInstance() {
 
     return getTargetSpreadsheet();
   }
+
 
   if (
     typeof CONFIG !== 'undefined' &&
@@ -2338,27 +2772,33 @@ function getTargetSpreadsheetInstance() {
     } catch (e) {
 
       Logger.log(
-        "Failed opening spreadsheet by ID: " +
+        'Failed opening spreadsheet by ID: ' +
         e.toString()
       );
     }
   }
+
 
   return SpreadsheetApp
     .getActiveSpreadsheet();
 }
 
 
-/**
- * ============================================================================
+/* ============================================================================
  * INCOMING REQUEST PARSER
- * ============================================================================
+ * ========================================================================== */
+
+/**
+ * Parses incoming webhook data.
+ *
+ * Supports JSON POST bodies and standard form parameters.
  */
 function parseIncomingRequest(e) {
 
   if (!e) {
     return {};
   }
+
 
   if (
     e.postData &&
@@ -2367,15 +2807,28 @@ function parseIncomingRequest(e) {
 
     try {
 
+      var content =
+        e.postData.contents;
+
+
+      /*
+       * Try JSON first.
+       */
       return JSON.parse(
-        e.postData.contents
+        content
       );
 
     } catch (err) {
-      // Fall through to request parameters.
+
+      /*
+       * Fall through to parameters.
+       */
+      Logger.log(
+        'ℹ️ POST body was not JSON; falling back to request parameters.'
+      );
     }
   }
 
+
   return e.parameter || {};
 }
-

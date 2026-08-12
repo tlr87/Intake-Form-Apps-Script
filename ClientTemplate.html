@@ -1,169 +1,627 @@
+```html
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #CADFEC; font-family: Arial, sans-serif;">
-    <!-- Outer Wrapper Table -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #CADFEC; width: 100%; table-layout: fixed;">
-      <tr>
-        <td align="center" style="padding: 30px 15px;">
-          
-          <!-- Main Card -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; color: #1e293b;">
-            
-            <!-- Header -->
-            <tr>
-              <td style="background-color: #993333; padding: 24px 30px; color: #ffffff;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td valign="middle">
-                      <div style="color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 0.5px; margin: 0; font-family: Arial, sans-serif;">RD3 TECH</div>
-                      <div style="color: #f1f5f9; font-size: 13px; margin-top: 4px; font-family: Arial, sans-serif;">Enquiry Confirmation</div>
-                    </td>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
 
-                    <!-- Logo Badge -->
-                    <td align="right" valign="middle" style="width: 76px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; padding: 6px;">
-                        <tr>
-                          <td align="center" valign="middle">
-                            <img src="https://i0.wp.com/rd3tech.com/wp-content/uploads/2023/03/cropped-RD3Logo.png?resize=300%2C300&amp;ssl=1" alt="RD3 Tech Logo" width="60" height="60" style="display: block; border: 0; outline: none; text-decoration: none; border-radius: 4px;">
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
+<body style="margin:0; padding:0; background-color:#CADFEC; font-family:Arial, sans-serif;">
 
-            <!-- Payload Extractors -->
-            <?
-              var p = (typeof submission !== 'undefined' && submission) ? submission : ((typeof payload !== 'undefined' && payload) ? payload : ((typeof lead !== 'undefined' && lead) ? lead : ((typeof data !== 'undefined' && data) ? data : {})));
-              var vName = (typeof name !== 'undefined' && name) ? name : p.name;
-              var vEmail = (typeof email !== 'undefined' && email) ? email : p.email;
-              var vPhone = (typeof phone !== 'undefined' && phone) ? phone : p.phone;
-              var vAddress = (typeof address !== 'undefined' && address) ? address : p.address;
-              var vUserType = (typeof userType !== 'undefined' && userType) ? userType : (p.userType || p.category || category);
-              var vSituation = (typeof situation !== 'undefined' && situation) ? situation : (p.situation || p.subject);
-              var vGoal = (typeof achievement !== 'undefined' && achievement) ? achievement : (p.achievement || p.message || p.goal || goal);
-              var vTimeframe = (typeof timeframe !== 'undefined' && timeframe) ? timeframe : p.timeframe;
-            ?>
+  <!-- Outer Wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-color:#CADFEC; width:100%; table-layout:fixed;">
+    <tr>
+      <td align="center" style="padding:30px 15px;">
 
-            <!-- Body Content -->
-            <tr>
-              <td style="padding: 30px; background-color: #ffffff;">
-                <p style="font-size: 15px; line-height: 1.6; color: #1e293b; margin-top: 0; margin-bottom: 20px; font-family: Arial, sans-serif;">
-                  Hi <strong><?= vName ? vName : 'there' ?></strong>,<br><br>
-                  Thanks for getting in touch with RD3 Tech. We've successfully received your enquiry and one of our team members will review it as soon as possible.
-                </p>
+        <!-- Main Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:600px; background-color:#ffffff; border-radius:8px;
+                 border:1px solid #cbd5e1; overflow:hidden;
+                 font-family:Arial, sans-serif; color:#1e293b;">
 
-                <!-- Summary of Submitted Details Section -->
-                <div style="font-size: 13px; font-weight: 700; color: #993333; text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 14px 0; padding-bottom: 6px; border-bottom: 2px solid #CADFEC; font-family: Arial, sans-serif;">
-                  Summary of Your Request
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#993333; padding:24px 30px; color:#ffffff;">
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+
+                  <td valign="middle">
+
+                    <div style="color:#ffffff; font-size:20px; font-weight:800;
+                                letter-spacing:0.5px; margin:0;">
+                      RD3 TECH
+                    </div>
+
+                    <div style="color:#f1f5f9; font-size:13px; margin-top:4px;">
+                      Enquiry Confirmation
+                    </div>
+
+                  </td>
+
+                  <!-- Logo -->
+                  <td align="right" valign="middle" style="width:76px;">
+
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                      style="background-color:#ffffff; border-radius:8px; padding:6px;">
+                      <tr>
+                        <td align="center" valign="middle">
+
+                          <img
+                            src="https://i0.wp.com/rd3tech.com/wp-content/uploads/2023/03/cropped-RD3Logo.png?resize=300%2C300&amp;ssl=1"
+                            alt="RD3 Tech Logo"
+                            width="60"
+                            height="60"
+                            style="display:block; border:0; outline:none;
+                                   text-decoration:none; border-radius:4px;"
+                          >
+
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
+
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+
+          <!-- Payload Extractors -->
+          <?
+            /*
+             * Resolve the available data object.
+             *
+             * We check several possible objects because the EmailService
+             * may provide the submission under different names.
+             */
+
+            var p =
+              (typeof submission !== 'undefined' && submission)
+                ? submission
+                : (
+                    (typeof payload !== 'undefined' && payload)
+                      ? payload
+                      : (
+                          (typeof lead !== 'undefined' && lead)
+                            ? lead
+                            : (
+                                (typeof data !== 'undefined' && data)
+                                  ? data
+                                  : {}
+                              )
+                        )
+                  );
+
+
+            /*
+             * Basic client information.
+             */
+
+            var vName =
+              (typeof name !== 'undefined' && name)
+                ? name
+                : p.name;
+
+            var vEmail =
+              (typeof email !== 'undefined' && email)
+                ? email
+                : p.email;
+
+            var vPhone =
+              (typeof phone !== 'undefined' && phone)
+                ? phone
+                : p.phone;
+
+            var vAddress =
+              (typeof address !== 'undefined' && address)
+                ? address
+                : p.address;
+
+
+            /*
+             * Preferred Contact
+             */
+
+            var vPreferredContact =
+              (typeof preferredContact !== 'undefined' && preferredContact)
+                ? preferredContact
+                : p.preferredContact;
+
+
+            /*
+             * Have you used RD3 Tech before?
+             *
+             * NEW FIELD
+             *
+             * Preferred property:
+             *   hasUsedRd3Tech
+             *
+             * Compatibility fallbacks are retained so existing submissions
+             * continue to work while the form/backend is being updated.
+             */
+
+            var vHasUsedRd3Tech =
+              (typeof hasUsedRd3Tech !== 'undefined' && hasUsedRd3Tech)
+                ? hasUsedRd3Tech
+                : (
+                    p.hasUsedRd3Tech ||
+                    p.usedRd3Tech ||
+                    p.rd3TechBefore ||
+                    p.relationship ||
+                    (
+                      typeof relationship !== 'undefined'
+                        ? relationship
+                        : ''
+                    )
+                  );
+
+
+            /*
+             * Request classification.
+             */
+
+            var vUserType =
+              (typeof userType !== 'undefined' && userType)
+                ? userType
+                : (
+                    p.userType ||
+                    p.category ||
+                    (
+                      typeof category !== 'undefined'
+                        ? category
+                        : ''
+                    )
+                  );
+
+
+            var vSituation =
+              (typeof situation !== 'undefined' && situation)
+                ? situation
+                : (
+                    p.situation ||
+                    p.subject
+                  );
+
+
+            var vGoal =
+              (typeof achievement !== 'undefined' && achievement)
+                ? achievement
+                : (
+                    p.achievement ||
+                    p.message ||
+                    p.goal ||
+                    (
+                      typeof goal !== 'undefined'
+                        ? goal
+                        : ''
+                    )
+                  );
+
+
+            var vTimeframe =
+              (typeof timeframe !== 'undefined' && timeframe)
+                ? timeframe
+                : p.timeframe;
+
+          ?>
+
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:30px; background-color:#ffffff;">
+
+              <!-- Greeting -->
+              <p style="font-size:15px; line-height:1.6; color:#1e293b;
+                        margin-top:0; margin-bottom:20px;">
+
+                Hi
+                <strong><?= vName ? vName : 'there' ?></strong>,
+
+                <br><br>
+
+                Thanks for getting in touch with RD3 Tech. We've successfully
+                received your enquiry and will review the information you've
+                provided before getting back to you.
+
+              </p>
+
+
+              <!-- Summary -->
+              <div style="font-size:13px; font-weight:700; color:#993333;
+                          text-transform:uppercase; letter-spacing:0.5px;
+                          margin:24px 0 14px 0; padding-bottom:6px;
+                          border-bottom:2px solid #CADFEC;">
+
+                Summary of Your Request
+
+              </div>
+
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                border="0"
+                style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+
+                <!-- Name -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;
+                             width:180px;">
+                    Name:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vName ? vName : 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- Email -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Email:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+
+                    <? if (vEmail) { ?>
+
+                      <a
+                        href="mailto:<?= vEmail ?>"
+                        style="color:#993333; text-decoration:underline;"
+                      >
+                        <?= vEmail ?>
+                      </a>
+
+                    <? } else { ?>
+
+                      Not provided
+
+                    <? } ?>
+
+                  </td>
+                </tr>
+
+
+                <!-- Phone -->
+                <? if (vPhone && vPhone !== 'N/A') { ?>
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Phone:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vPhone ?>
+                  </td>
+                </tr>
+
+                <? } ?>
+
+
+                <!-- Location -->
+                <? if (vAddress && vAddress !== 'N/A') { ?>
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Location:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vAddress ?>
+                  </td>
+                </tr>
+
+                <? } ?>
+
+
+                <!-- Preferred Contact -->
+                <? if (vPreferredContact && vPreferredContact !== 'N/A') { ?>
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Preferred Contact:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vPreferredContact ?>
+                  </td>
+                </tr>
+
+                <? } ?>
+
+
+                <!-- NEW: Have you used RD3 Tech before? -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Have you used RD3 Tech before?
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+
+                    <?= vHasUsedRd3Tech ? vHasUsedRd3Tech : 'Not provided' ?>
+
+                  </td>
+                </tr>
+
+
+                <!-- Category -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Category:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vUserType ? vUserType : 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- Situation -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Situation:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vSituation ? vSituation : 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- Goal -->
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Goal / Desired Outcome:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vGoal ? vGoal : 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- Timeframe -->
+                <? if (vTimeframe && vTimeframe !== 'N/A') { ?>
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    Timeframe:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= vTimeframe ?>
+                  </td>
+                </tr>
+
+                <? } ?>
+
+              </table>
+
+
+              <!-- What Happens Next -->
+              <div style="border-left:4px solid #993333;
+                          background-color:#f8fafc;
+                          border-top:1px solid #e2e8f0;
+                          border-right:1px solid #e2e8f0;
+                          border-bottom:1px solid #e2e8f0;
+                          border-radius:0 6px 6px 0;
+                          padding:20px;
+                          margin-bottom:24px;">
+
+                <div style="font-size:14px; font-weight:700; color:#993333;
+                            text-transform:uppercase; letter-spacing:0.5px;
+                            margin-bottom:8px;">
+
+                  What happens next?
+
                 </div>
 
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; width: 140px; font-family: Arial, sans-serif;">Name:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vName ? vName : 'Not provided' ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Email:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;">
-                      <a href="mailto:<?= vEmail ? vEmail : '' ?>" style="color: #993333; text-decoration: underline;"><?= vEmail ? vEmail : 'Not provided' ?></a>
-                    </td>
-                  </tr>
-                  <? if (vPhone && vPhone !== 'N/A') { ?>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Phone:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vPhone ?></td>
-                  </tr>
-                  <? } ?>
-                  <? if (vAddress && vAddress !== 'N/A') { ?>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Location:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vAddress ?></td>
-                  </tr>
-                  <? } ?>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Subject / Category:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vSituation ? vSituation : 'General Inquiry' ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Details / Goal:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vGoal ? vGoal : 'Not provided' ?></td>
-                  </tr>
-                  <? if (vTimeframe && vTimeframe !== 'N/A') { ?>
-                  <tr>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #64748b; font-weight: 600; font-family: Arial, sans-serif;">Timeframe:</td>
-                    <td style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #0f172a; font-family: Arial, sans-serif;"><?= vTimeframe ?></td>
-                  </tr>
-                  <? } ?>
-                </table>
 
-                <!-- What Happens Next Section -->
-                <div style="border-left: 4px solid #993333; background-color: #f8fafc; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 0 6px 6px 0; padding: 20px; margin-bottom: 24px; font-family: Arial, sans-serif;">
-                  <div style="font-size: 14px; font-weight: 700; color: #993333; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                    What happens next?
-                  </div>
-                  <div style="font-size: 14px; color: #334155; margin-bottom: 16px; line-height: 1.5;">
-                    We'll make the process as simple and straightforward as possible.
-                  </div>
+                <div style="font-size:14px; color:#334155;
+                            margin-bottom:16px; line-height:1.5;">
 
-                  <div style="margin-bottom: 14px;">
-                    <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">1. We'll review your enquiry</div>
-                    <div style="font-size: 13px; color: #475569; line-height: 1.5;">We'll take a look at the information you've provided and assess how we can best help.</div>
-                  </div>
+                  We'll make the process as simple and straightforward as possible.
 
-                  <div style="margin-bottom: 14px;">
-                    <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">2. We'll contact you</div>
-                    <div style="font-size: 13px; color: #475569; line-height: 1.5;">If we need more information, or to discuss your enquiry, we'll get in touch.</div>
-                  </div>
-
-                  <div style="margin-bottom: 14px;">
-                    <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">3. We'll recommend a solution</div>
-                    <div style="font-size: 13px; color: #475569; line-height: 1.5;">We'll explain your options in plain English and provide any pricing before work begins.</div>
-                  </div>
-
-                  <div style="margin-bottom: 14px;">
-                    <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">4. We'll get started</div>
-                    <div style="font-size: 13px; color: #475569; line-height: 1.5;">Once you're happy to proceed, we'll arrange the next steps and keep you informed along the way.</div>
-                  </div>
-
-                  <div style="font-size: 13px; font-weight: 600; color: #993333; margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; line-height: 1.5;">
-                    Our goal is to make technology easy to understand and provide reliable, friendly service from start to finish.
-                  </div>
                 </div>
 
-                <p style="font-size: 14px; line-height: 1.5; color: #475569; margin-bottom: 24px; font-family: Arial, sans-serif;">
-                  If you've forgotten to include anything or would like to add further information, simply reply to this email and it will be added to your enquiry.
-                </p>
 
-                <!-- Signature Block -->
-                <div style="font-size: 14px; line-height: 1.5; color: #0f172a; padding-top: 16px; border-top: 1px solid #e2e8f0; font-family: Arial, sans-serif;">
-                  Kind regards,<br><br>
-                  <div style="font-weight: 700; color: #0f172a;">Tom Revill</div>
-                  <div style="color: #993333; font-weight: 600;">RD3 Tech</div>
-                  <div style="color: #64748b; font-size: 13px;">IT Consulting &amp; Business Solutions</div>
-                  <div style="margin-top: 4px;">
-                    <a href="mailto:tom@rd3tech.com" style="color: #993333; text-decoration: underline; font-weight: 500;">tom@rd3tech.com</a>
+                <!-- Step 1 -->
+                <div style="margin-bottom:14px;">
+
+                  <div style="font-size:14px; font-weight:700;
+                              color:#0f172a; margin-bottom:2px;">
+
+                    1. We'll review your enquiry
+
                   </div>
+
+                  <div style="font-size:13px; color:#475569; line-height:1.5;">
+
+                    We'll review the information you've provided and consider
+                    how we can best help.
+
+                  </div>
+
                 </div>
 
-              </td>
-            </tr>
 
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #f1f5f9; padding: 16px 30px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; font-family: Arial, sans-serif;">
-                RD3 Tech | Your Technology Support Journey Starts Here | <a href="mailto:tom@rd3tech.com" style="color: #993333; text-decoration: underline;">tom@rd3tech.com</a> | <a href="https://rd3tech.com/" style="color: #993333; text-decoration: underline;">https://rd3tech.com/</a>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
+                <!-- Step 2 -->
+                <div style="margin-bottom:14px;">
+
+                  <div style="font-size:14px; font-weight:700;
+                              color:#0f172a; margin-bottom:2px;">
+
+                    2. We'll contact you
+
+                  </div>
+
+                  <div style="font-size:13px; color:#475569; line-height:1.5;">
+
+                    If we need more information, or to discuss your enquiry,
+                    we'll get in touch using your preferred contact method
+                    where possible.
+
+                  </div>
+
+                </div>
+
+
+                <!-- Step 3 -->
+                <div style="margin-bottom:14px;">
+
+                  <div style="font-size:14px; font-weight:700;
+                              color:#0f172a; margin-bottom:2px;">
+
+                    3. We'll recommend a solution
+
+                  </div>
+
+                  <div style="font-size:13px; color:#475569; line-height:1.5;">
+
+                    We'll explain your options in plain English and provide
+                    any pricing before work begins.
+
+                  </div>
+
+                </div>
+
+
+                <!-- Step 4 -->
+                <div style="margin-bottom:14px;">
+
+                  <div style="font-size:14px; font-weight:700;
+                              color:#0f172a; margin-bottom:2px;">
+
+                    4. We'll get started
+
+                  </div>
+
+                  <div style="font-size:13px; color:#475569; line-height:1.5;">
+
+                    Once you're happy to proceed, we'll arrange the next steps
+                    and keep you informed along the way.
+
+                  </div>
+
+                </div>
+
+
+                <!-- Closing -->
+                <div style="font-size:13px; font-weight:600; color:#993333;
+                            margin-top:16px; padding-top:12px;
+                            border-top:1px dashed #cbd5e1; line-height:1.5;">
+
+                  Our goal is to make technology easy to understand and provide
+                  reliable, friendly service from start to finish.
+
+                </div>
+
+              </div>
+
+
+              <!-- Additional Information -->
+              <p style="font-size:14px; line-height:1.5; color:#475569;
+                        margin-bottom:24px;">
+
+                If you've forgotten to include anything or would like to add
+                further information, simply reply to this email and it will be
+                added to your enquiry.
+
+              </p>
+
+
+              <!-- Signature -->
+              <div style="font-size:14px; line-height:1.5; color:#0f172a;
+                          padding-top:16px; border-top:1px solid #e2e8f0;">
+
+                Kind regards,
+                <br><br>
+
+                <div style="font-weight:700; color:#0f172a;">
+                  Tom Revill
+                </div>
+
+                <div style="color:#993333; font-weight:600;">
+                  RD3 Tech
+                </div>
+
+                <div style="color:#64748b; font-size:13px;">
+                  IT Consulting &amp; Business Solutions
+                </div>
+
+                <div style="margin-top:4px;">
+
+                  <a
+                    href="mailto:tom@rd3tech.com"
+                    style="color:#993333; text-decoration:underline; font-weight:500;"
+                  >
+                    tom@rd3tech.com
+                  </a>
+
+                </div>
+
+              </div>
+
+            </td>
+          </tr>
+
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f1f5f9; padding:16px 30px;
+                       text-align:center; font-size:12px; color:#64748b;
+                       border-top:1px solid #e2e8f0;">
+
+              RD3 Tech | Your Technology Support Journey Starts Here |
+
+              <a
+                href="mailto:tom@rd3tech.com"
+                style="color:#993333; text-decoration:underline;"
+              >
+                tom@rd3tech.com
+              </a>
+
+              |
+
+              <a
+                href="https://rd3tech.com/"
+                style="color:#993333; text-decoration:underline;"
+              >
+                rd3tech.com
+              </a>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
 </html>
+```
