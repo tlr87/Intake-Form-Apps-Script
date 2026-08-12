@@ -981,3 +981,120 @@ function testSecurityEmailValidation() {
 }
 
 
+
+
+/**
+ * ============================================================================
+ * DIRECT EMAIL TEST
+ * ============================================================================
+ *
+ * Run this function directly in Google Apps Script Editor to test
+ * client and admin dispatches.
+ *
+ * This intentionally bypasses the public rate-limit check because it is
+ * a developer test function.
+ * ============================================================================
+ */
+function testClientEmailDirectly() {
+
+  var testPayload = {
+
+    "Name":
+      "John Test",
+
+    "Email":
+      "tom@rd3tech.com",
+
+    "Phone":
+      "0211234567",
+
+    "Situation":
+      "Need help with TV setup",
+
+    "Message":
+      "Please check https://example.com and https://google.com"
+  };
+
+  Logger.log(
+    "--- STARTING DIRECT TEST ---"
+  );
+
+  var result =
+    processSubmission(
+      testPayload
+    );
+
+  Logger.log(
+    "--- TEST RESULT COMPLETE ---"
+  );
+}
+
+
+
+function testSpamThreshold() {
+
+  Logger.log("==================================================");
+  Logger.log("🧪 SPAM THRESHOLD TEST");
+  Logger.log("==================================================");
+
+  var threshold =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.SPAM_THRESHOLD
+    )
+      ? CONFIG.SPAM_THRESHOLD
+      : 3;
+
+  Logger.log(
+    "Configured SPAM_THRESHOLD: " +
+    threshold
+  );
+
+  var testPayload = {
+
+    name:
+      "Threshold Test",
+
+    email:
+      "tom@rd3tech.com",
+
+    phone:
+      "0215550042",
+
+    situation:
+      "Spam threshold test",
+
+    achievement:
+      "https://example.com https://example.org",
+
+    timeframe:
+      "Not urgent",
+
+    honeypot:
+      ""
+  };
+
+  var result =
+    evaluateSubmission(
+      testPayload,
+      normalizeInputKeys(testPayload)
+    );
+
+  Logger.log(
+    "Evaluation Result: " +
+    JSON.stringify(result)
+  );
+
+  Logger.log(
+    "Expected spamScore: 2"
+  );
+
+  Logger.log(
+    "Expected isSpam: " +
+    (2 >= Number(threshold))
+  );
+
+  Logger.log("==================================================");
+}
+
+

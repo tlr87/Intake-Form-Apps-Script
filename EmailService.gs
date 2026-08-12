@@ -466,6 +466,42 @@ function processLatestSheetRow() {
   return processSubmission(payload);
 }
 
+/**
+ * ============================================================================
+ * EMAIL ADDRESS NORMALISATION
+ * ============================================================================
+ */
+function normalizeEmailAddress(value) {
+
+  var email = String(value || '').trim();
+
+  if (!email) {
+    return '';
+  }
+
+  // Handle Markdown mailto links:
+  // [name@example.com](mailto:name@example.com)
+  var markdownMatch = email.match(
+    /^\[([^\]]+)\]\(mailto:([^)]+)\)$/i
+  );
+
+  if (markdownMatch) {
+    email = markdownMatch[2].trim();
+  }
+
+  // Handle plain mailto links:
+  // mailto:name@example.com
+  if (/^mailto:/i.test(email)) {
+    email = email.replace(/^mailto:/i, '').trim();
+  }
+
+  return email;
+}
+
+
+
+
+
 
 /**
  * ============================================================================
@@ -641,7 +677,7 @@ function processSubmission(rawData) {
       "N/A"
     );
 
-
+    emailVal = normalizeEmailAddress(emailVal);
   if (
     emailVal === "N/A" &&
     rawData
@@ -1120,7 +1156,7 @@ function evaluateSubmission(rawData, map) {
     map['website_url_hp']
   ) {
 
-    isSpam = true;
+  
     spamScore += 5;
 
     flagReasons.push(
@@ -1393,29 +1429,26 @@ function evaluateSubmission(rawData, map) {
       .toLowerCase();
 
 
-  var urlMatch =
-    combinedText.match(
-      /https?:\/\/[^\s]+|www\.[^\s]+/g
-    );
+var urlMatch =
+  combinedText.match(
+    /https?:\/\/[^\s]+|www\.[^\s]+/gi
+  );
 
+var linkCount =
+  urlMatch
+    ? urlMatch.length
+    : 0;
 
-  var linkCount =
-    urlMatch
-      ? urlMatch.length
-      : 0;
+if (linkCount > 1) {
 
+  spamScore += 2;
 
-  if (linkCount > 1) {
-
-    spamScore += 2;
-    isSpam = true;
-
-    flagReasons.push(
-      "Contains multiple URLs (" +
-      linkCount +
-      ")"
-    );
-  }
+  flagReasons.push(
+    "Contains multiple URLs (" +
+    linkCount +
+    ")"
+  );
+}
 
 
   /**
@@ -1448,7 +1481,7 @@ function evaluateSubmission(rawData, map) {
       spamScore += 1;
 
       flagReasons.push(
-        "Suspicious phone format"
+        "Suspicious phone format: " + phoneStr
       );
     }
   }
@@ -1505,10 +1538,10 @@ function evaluateSubmission(rawData, map) {
       : "NEW INQUIRY";
 
 
-  var category =
-    categorizeLead(
-      combinedText
-    );
+  // Legacy category classifier disabled.
+  // var category = categorizeLead(combinedText);
+
+  var category = "General Inquiry";
 
 
   return {
@@ -1559,7 +1592,8 @@ function evaluateSubmission(rawData, map) {
  * taxonomy workflow.
  *
  * Retained temporarily for legacy compatibility only.
- */
+ **/
+ /*
 function categorizeLead(text) {
 
   if (
@@ -1590,7 +1624,7 @@ function categorizeLead(text) {
 
       for (
         var k = 0;
-        k < cat.keywords.length;
+        k < cat.keywords.length; 
         k++
       ) {
 
@@ -1609,7 +1643,7 @@ function categorizeLead(text) {
 
   return "General Inquiry";
 }
-
+*/
 
 /**
  * LEGACY: Previous Flagged-sheet / CONFIG.FLAGGED_KEYWORDS source.
@@ -1743,33 +1777,36 @@ function logToSheet(submission) {
         : "Submissions";
 
     var sheet =
-      ss.getSheetByName(sheetName) ||
-      ss.getSheets()[0];
+  ss.getSheetByName(sheetName);
 
-    if (!sheet) {
+if (!sheet) {
 
-      sheet =
-        ss.insertSheet(
-          sheetName
-        );
+  Logger.log(
+    "⚠️ Submission sheet '" +
+    sheetName +
+    "' not found. Creating it."
+  );
 
-      sheet.appendRow([
-        "Lead ID",
-        "Timestamp",
-        "Status",
-        "Name",
-        "Email",
-        "Phone",
-        "Category",
-        "Subject / Situation",
-        "Message / Goal",
-        "Timeframe",
-        "Is Spam",
-        "Review Required",
-        "Spam Score",
-        "Flag Reasons"
-      ]);
-    }
+  sheet =
+    ss.insertSheet(sheetName);
+
+  sheet.appendRow([
+    "Lead ID",
+    "Timestamp",
+    "Status",
+    "Name",
+    "Email",
+    "Phone",
+    "Category",
+    "Subject / Situation",
+    "Message / Goal",
+    "Timeframe",
+    "Is Spam",
+    "Review Required",
+    "Spam Score",
+    "Flag Reasons"
+  ]);
+}
 
     sheet.appendRow([
 
@@ -2157,6 +2194,16 @@ function sendClientConfirmation(
         ).trim()
       : "";
 
+  var adminEmail =
+    (
+      typeof CONFIG !== 'undefined' &&
+      CONFIG.ADMIN_EMAIL
+    )
+      ? CONFIG.ADMIN_EMAIL
+      : "tom@rd3tech.com";
+
+
+
   var senderName =
     (
       typeof CONFIG !== 'undefined' &&
@@ -2237,16 +2284,16 @@ function sendClientConfirmation(
         .evaluate()
         .getContent();
 
-    GmailApp.sendEmail(
+      GmailApp.sendEmail(
       clientEmail,
       clientSubject,
       "Please enable HTML to view this email.",
       {
         htmlBody: htmlBody,
-        name: senderName
+        name: senderName,
+        replyTo: adminEmail
       }
     );
-
     Logger.log(
       "✅ Client Confirmation Email successfully sent to: " +
       clientEmail
@@ -2330,52 +2377,5 @@ function parseIncomingRequest(e) {
   }
 
   return e.parameter || {};
-}
-
-
-/**
- * ============================================================================
- * DIRECT EMAIL TEST
- * ============================================================================
- *
- * Run this function directly in Google Apps Script Editor to test
- * client and admin dispatches.
- *
- * This intentionally bypasses the public rate-limit check because it is
- * a developer test function.
- * ============================================================================
- */
-function testClientEmailDirectly() {
-
-  var testPayload = {
-
-    "Name":
-      "John Test",
-
-    "Email":
-      "tom@rd3tech.com",
-
-    "Phone":
-      "0211234567",
-
-    "Situation":
-      "Need help with TV setup",
-
-    "Message":
-      "Need TV SEO done as soon as possible"
-  };
-
-  Logger.log(
-    "--- STARTING DIRECT TEST ---"
-  );
-
-  var result =
-    processSubmission(
-      testPayload
-    );
-
-  Logger.log(
-    "--- TEST RESULT COMPLETE ---"
-  );
 }
 
