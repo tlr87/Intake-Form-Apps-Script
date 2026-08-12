@@ -7,6 +7,7 @@ const CONFIG = {
   SENDER_NAME: "RD3 Tech",
   SPREADSHEET_ID: "1FNzJIm_njbU9d9Rv_dfJe9ChzG8f6ICJOF6bIAxrLUY",
   SHEET_NAME: "Submissions",
+  SHEET_NAME_GOOGLE: "Form Responses",
   SPAM_THRESHOLD: 3,
   TIMEZONE: "Pacific/Auckland",
   HONEYPOT_FIELD: "website",

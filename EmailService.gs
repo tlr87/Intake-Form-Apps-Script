@@ -70,7 +70,7 @@ function processLatestSheetRow() {
     Logger.log("❌ Fallback Failed: Spreadsheet target unreachable.");
     return;
   }
-  var sheetName = (typeof CONFIG !== 'undefined' && CONFIG.SHEET_NAME) ? CONFIG.SHEET_NAME : "Form Responses 1";
+  var sheetName = CONFIG.SHEET_NAME_GOOGLE;
   var sheet = ss.getSheetByName(sheetName) || ss.getSheets()[0];
   var lastRow = sheet.getLastRow();
   
