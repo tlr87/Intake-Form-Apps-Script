@@ -2198,9 +2198,13 @@ function sendClientConfirmation(
 
   try {
 
-    var clientSubject =
-      'We received your request - ' +
-      companyName;
+   var clientSubject =
+  'We received your request ' +
+  (submission.name || 'there') +
+  ' - ' +
+  (submission.subject || submission.situation || 'Your request') +
+  ' - ' +
+  companyName;
 
 
     var template =
