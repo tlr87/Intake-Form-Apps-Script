@@ -13,9 +13,11 @@ var SPREADSHEET_ID = "1FNzJIm_njbU9d9Rv_dfJe9ChzG8f6ICJOF6bIAxrLUY";
 var HTML_TAB_NAME = "HTML";
 
 // Web App deployment URLs
-var DEV_BASE_URL = "https://script.google.com/a/macros/rd3tech.com/s/AKfycbzpO2HZEaD2K_UtIx0fAhBgC2o2cdvzVV4Us1OWe5AC/dev";
-var EXEC_BASE_URL = "https://script.google.com/a/macros/rd3tech.com/s/AKfycbzpO2HZEaD2K_UtIx0fAhBgC2o2cdvzVV4Us1OWe5AC/exec";
+var DEV_BASE_URL =
+  "https://script.google.com/a/macros/rd3tech.com/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/dev";
 
+var EXEC_BASE_URL =
+  "https://script.google.com/a/macros/rd3tech.com/s/AKfycbwITHknJ3gd17a_XQWGMNOB5tCo1ZdimLe_UAcuxPuBu4B2ab6Wrz3grnCIeu55yTVXGA/exec";
 
 // ============================================================
 // HTML FILE DEFINITIONS
@@ -37,6 +39,10 @@ var HTML_FILES = [
   {
     name: "Index",
     description: "Default Management & Preview Hub Landing Page"
+  },
+  {
+    name: "Readme",
+    description: "Complete RD3 Tech system documentation and modification guide"
   },
   {
     name: "SnippetsReference",
@@ -71,7 +77,6 @@ var HTML_FILES = [
   }
 ];
 
-
 // ============================================================
 // WEB APP ENTRY POINT
 // ============================================================
@@ -91,23 +96,17 @@ var HTML_FILES = [
 
 function doGet(e) {
 
-  // Default page
   var templateName = "Index";
+  var mode = "";
 
-  // Read page parameter
   if (e && e.parameter && e.parameter.page) {
     templateName = e.parameter.page;
   }
 
-  // Default mode
-  var mode = "";
-
-  // Read mode parameter
   if (e && e.parameter && e.parameter.mode) {
     mode = String(e.parameter.mode).toLowerCase();
   }
 
-  // Check that the requested page exists
   var validPage = false;
 
   for (var i = 0; i < HTML_FILES.length; i++) {
@@ -117,7 +116,6 @@ function doGet(e) {
     }
   }
 
-  // Stop if the requested page does not exist
   if (!validPage) {
     return HtmlService
       .createHtmlOutput(
@@ -134,43 +132,40 @@ function doGet(e) {
 
   try {
 
-    // Load the requested HTML template
-    var template = HtmlService.createTemplateFromFile(templateName);
+    var template =
+      HtmlService.createTemplateFromFile(templateName);
 
-    // Mock data used by email preview templates
     template.name = "John Doe";
     template.email = "john@example.com";
     template.phone = "(555) 019-2834";
     template.address = "123 Tech Street, Sydney NSW";
     template.userType = "Business Client";
-    template.situation = "Looking to upgrade our network infrastructure and cloud backups.";
-    template.achievement = "Improved security and faster system performance.";
+    template.situation =
+      "Looking to upgrade our network infrastructure and cloud backups.";
+    template.achievement =
+      "Improved security and faster system performance.";
     template.timeframe = "Within 1 month";
     template.submitTime = new Date().toLocaleString();
 
-    // Set template mode flags
     template.isSpam = (mode === "spam");
     template.isUrgent = (mode === "urgent");
     template.requiresReview = (mode === "review");
 
-    // Get the current deployed web app URL.
-    // Index.html uses this to construct its navigation links.
-    template.baseUrl = ScriptApp.getService().getUrl();
+    template.baseUrl =
+      ScriptApp.getService().getUrl();
 
-    // Pass current request information to the template.
-    // Useful for diagnostics and page-specific logic.
     template.currentPage = templateName;
     template.currentMode = mode;
 
-    // Render and return the page
     return template
       .evaluate()
       .setTitle("RD3 Tech - " + templateName)
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      .setXFrameOptionsMode(
+        HtmlService.XFrameOptionsMode.ALLOWALL
+      );
 
   } catch (err) {
 
-    // Display a useful error page if the HTML template cannot be loaded
     return HtmlService
       .createHtmlOutput(
         "<div style=\"font-family:Arial,sans-serif;padding:30px;color:#dc2626;\">" +
@@ -184,13 +179,11 @@ function doGet(e) {
         "<p><strong>Error:</strong><br>" +
         escapeHtml(err.toString()) +
         "</p>" +
-        "<p>Check that the required HTML file exists in the Apps Script project.</p>" +
         "</div>"
       )
       .setTitle("RD3 Tech - Error");
   }
 }
-
 
 // ============================================================
 // HTML ESCAPING HELPER

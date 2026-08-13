@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>RD3 Tech — System Documentation</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     Roboto, Arial, sans-serif;
+        color: #1e293b;
+        line-height: 1.6;
+      }
+
+      a {
+        color: #993333;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+
+      .header {
+        background-color: #993333;
+        color: #ffffff;
+        padding: 30px;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .header h1 {
+        margin: 0 0 8px 0;
+        font-size: 26px;
+        letter-spacing: 0.5px;
+      }
+
+      .header p {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 14px;
+      }
+
+      .content {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-top: 0;
+        border-radius: 0 0 8px 8px;
+        padding: 35px;
+      }
+
+      .toc {
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #993333;
+        border-radius: 6px;
+        padding: 20px 24px;
+        margin-bottom: 35px;
+      }
+
+      .toc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #993333;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+      }
+
+      .toc ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .toc li {
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+
+      .section {
+        margin-top: 40px;
+        padding-top: 10px;
+      }
+
+      .section:first-of-type {
+        margin-top: 0;
+      }
+
+      h2 {
+        color: #993333;
+        font-size: 21px;
+        margin: 0 0 15px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #CADFEC;
+      }
+
+      h3 {
+        color: #334155;
+        font-size: 17px;
+        margin: 25px 0 10px 0;
+      }
+
+      h4 {
+        color: #475569;
+        font-size: 15px;
+        margin: 20px 0 8px 0;
+      }
+
+      p {
+        font-size: 14px;
+        color: #475569;
+        margin: 0 0 15px 0;
+      }
+
+      ul,
+      ol {
+        color: #475569;
+        font-size: 14px;
+        margin-top: 8px;
+        margin-bottom: 18px;
+      }
+
+      li {
+        margin-bottom: 7px;
+      }
+
+      .note {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-left: 4px solid #0284c7;
+        border-radius: 6px;
+        padding: 15px 18px;
+        margin: 18px 0;
+      }
+
+      .note strong {
+        color: #0369a1;
+      }
+
+      .warning {
+        background-color: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-left: 4px solid #f59e0b;
+        border-radius: 6px;
+        padding: 15px 18px;
+        margin: 18px 0;
+      }
+
+      .warning strong {
+        color: #b45309;
+      }
+
+      .danger {
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #dc2626;
+        border-radius: 6px;
+        padding: 15px 18px;
+        margin: 18px 0;
+      }
+
+      .danger strong {
+        color: #b91c1c;
+      }
+
+      .success {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-left: 4px solid #16a34a;
+        border-radius: 6px;
+        padding: 15px 18px;
+        margin: 18px 0;
+      }
+
+      .success strong {
+        color: #15803d;
+      }
+
+      code {
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 2px 5px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono",
+                     Menlo, monospace;
+        font-size: 12px;
+        color: #0f172a;
+      }
+
+      pre {
+        background-color: #0f172a;
+        color: #e2e8f0;
+        border-radius: 6px;
+        padding: 18px;
+        overflow-x: auto;
+        margin: 15px 0 20px 0;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono",
+                     Menlo, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+        margin: 18px 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      th {
+        background-color: #993333;
+        color: #ffffff;
+        text-align: left;
+        padding: 10px;
+      }
+
+      td {
+        border: 1px solid #e2e8f0;
+        padding: 10px;
+        vertical-align: top;
+        color: #475569;
+      }
+
+      tr:nth-child(even) td {
+        background-color: #f8fafc;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-family: monospace;
+        padding: 3px 7px;
+        border-radius: 4px;
+        background-color: #cbd5e1;
+        color: #0f172a;
+        white-space: nowrap;
+      }
+
+      .badge-red {
+        background-color: #dc2626;
+        color: #ffffff;
+      }
+
+      .badge-orange {
+        background-color: #f97316;
+        color: #ffffff;
+      }
+
+      .badge-yellow {
+        background-color: #f59e0b;
+        color: #ffffff;
+      }
+
+      .badge-green {
+        background-color: #16a34a;
+        color: #ffffff;
+      }
+
+      .badge-blue {
+        background-color: #0284c7;
+        color: #ffffff;
+      }
+
+      .file-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+
+      .file-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #993333;
+        border-radius: 6px;
+        padding: 14px;
+      }
+
+      .file-card strong {
+        display: block;
+        color: #993333;
+        margin-bottom: 5px;
+      }
+
+      .file-card span {
+        display: block;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin: 20px 0;
+      }
+
+      .flow-step {
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 14px;
+        text-align: center;
+      }
+
+      .flow-number {
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        margin: 0 auto 8px auto;
+        border-radius: 50%;
+        background-color: #993333;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .flow-step strong {
+        display: block;
+        font-size: 13px;
+        color: #334155;
+        margin-bottom: 4px;
+      }
+
+      .flow-step span {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+      }
+
+      .footer {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 12px;
+        color: #64748b;
+      }
+
+      .back-top {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #993333;
+        text-decoration: none;
+      }
+
+      @media (max-width: 700px) {
+
+        .container {
+          margin: 15px auto;
+          padding: 10px;
+        }
+
+        .header {
+          padding: 22px;
+        }
+
+        .header h1 {
+          font-size: 21px;
+        }
+
+        .content {
+          padding: 22px;
+        }
+
+        .file-list {
+          grid-template-columns: 1fr;
+        }
+
+        .flow {
+          grid-template-columns: 1fr 1fr;
+        }
+
+      }
+
+      @media (max-width: 450px) {
+
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <!-- =========================================================
+           HEADER
+           ========================================================= -->
+
+      <div class="header">
+
+        <h1>RD3 TECH — System Documentation</h1>
+
+        <p>
+          How to use, configure, modify, maintain, test, and safely deploy
+          the RD3 Tech enquiry and email notification system.
+        </p>
+
+      </div>
+
+
+      <div class="content">
+
+        <!-- =========================================================
+             TABLE OF CONTENTS
+             ========================================================= -->
+
+        <div class="toc" id="top">
+
+          <div class="toc-title">
+            Documentation Contents
+          </div>
+
+          <ul>
+
+            <li>
+              <a href="#overview">System Overview</a>
+            </li>
+
+            <li>
+              <a href="#workflow">How the System Works</a>
+            </li>
+
+            <li>
+              <a href="#form-fields">Form Fields &amp; Data Order</a>
+            </li>
+
+            <li>
+              <a href="#templates">Admin &amp; Client Email Templates</a>
+            </li>
+
+            <li>
+              <a href="#alerts">Alerts &amp; Alert Types</a>
+            </li>
+
+            <li>
+              <a href="#keywords">Keyword Filtering</a>
+            </li>
+
+            <li>
+              <a href="#taxonomy">Keyword Taxonomy Editor</a>
+            </li>
+
+            <li>
+              <a href="#modifying">How to Modify the System</a>
+            </li>
+
+            <li>
+              <a href="#testing">Testing</a>
+            </li>
+
+            <li>
+              <a href="#deployment">Deployment</a>
+            </li>
+
+            <li>
+              <a href="#form-responses">Form Responses Sheet</a>
+            </li>
+
+            <li>
+              <a href="#troubleshooting">Troubleshooting</a>
+            </li>
+
+            <li>
+              <a href="#rules">Important Maintenance Rules</a>
+            </li>
+
+          </ul>
+
+        </div>
+
+
+        <!-- =========================================================
+             OVERVIEW
+             ========================================================= -->
+
+        <div class="section" id="overview">
+
+          <h2>1. System Overview</h2>
+
+          <p>
+            The RD3 Tech enquiry system receives enquiries from the RD3 Tech
+            website and processes the submitted information through Google
+            Apps Script.
+          </p>
+
+          <p>
+            The system is designed to perform several jobs automatically:
+          </p>
+
+          <ul>
+
+            <li>Receive the website enquiry.</li>
+
+            <li>Store the submitted information in the
+                <code>Form Responses</code> sheet.</li>
+
+            <li>Evaluate the submission for important keywords.</li>
+
+            <li>Identify urgent enquiries.</li>
+
+            <li>Identify enquiries requiring manual review.</li>
+
+            <li>Identify potential spam.</li>
+
+            <li>Send an internal administrator notification.</li>
+
+            <li>Send a confirmation email to the client.</li>
+
+            <li>Keep the client-facing email separate from internal
+                evaluation information.</li>
+
+          </ul>
+
+          <div class="success">
+
+            <strong>Design principle:</strong>
+
+            The form is the source of truth for the client data.
+            The Admin and Client templates should display the same submitted
+            information in the same logical order.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             WORKFLOW
+             ========================================================= -->
+
+        <div class="section" id="workflow">
+
+          <h2>2. How the System Works</h2>
+
+          <div class="flow">
+
+            <div class="flow-step">
+
+              <div class="flow-number">1</div>
+
+              <strong>Client submits form</strong>
+
+              <span>
+                Website enquiry is submitted.
+              </span>
+
+            </div>
+
+            <div class="flow-step">
+
+              <div class="flow-number">2</div>
+
+              <strong>Submission processed</strong>
+
+              <span>
+                Apps Script receives and evaluates the data.
+              </span>
+
+            </div>
+
+            <div class="flow-step">
+
+              <div class="flow-number">3</div>
+
+              <strong>Alerts evaluated</strong>
+
+              <span>
+                Keywords determine review, spam, and urgency.
+              </span>
+
+            </div>
+
+            <div class="flow-step">
+
+              <div class="flow-number">4</div>
+
+              <strong>Emails sent</strong>
+
+              <span>
+                Admin alert and client confirmation are generated.
+              </span>
+
+            </div>
+
+          </div>
+
+          <p>
+            The administrator email contains internal evaluation information
+            such as review flags, spam flags, urgent flags, and the reasons
+            those flags were triggered.
+          </p>
+
+          <p>
+            The client email is deliberately simpler. It confirms receipt of
+            the enquiry and displays the submitted enquiry information without
+            exposing internal spam or review logic.
+          </p>
+
+        </div>
+
+
+        <!-- =========================================================
+             FORM FIELDS
+             ========================================================= -->
+
+        <div class="section" id="form-fields">
+
+          <h2>3. Form Fields &amp; Data Order</h2>
+
+          <p>
+            The current form data order is important. The Google Sheet,
+            backend data object, Admin email, and Client email should remain
+            aligned with this structure.
+          </p>
+
+          <div class="table-wrapper">
+
+            <table>
+
+              <thead>
+
+                <tr>
+                  <th>#</th>
+                  <th>Form Field</th>
+                  <th>Purpose</th>
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                <tr>
+                  <td>1</td>
+                  <td><code>Timestamp</code></td>
+                  <td>Time the enquiry was submitted.</td>
+                </tr>
+
+                <tr>
+                  <td>2</td>
+                  <td><code>Name</code></td>
+                  <td>Client name.</td>
+                </tr>
+
+                <tr>
+                  <td>3</td>
+                  <td><code>Email</code></td>
+                  <td>Client email address.</td>
+                </tr>
+
+                <tr>
+                  <td>4</td>
+                  <td><code>Phone</code></td>
+                  <td>Client telephone number.</td>
+                </tr>
+
+                <tr>
+                  <td>5</td>
+                  <td><code>Address / Location</code></td>
+                  <td>Client location or service address.</td>
+                </tr>
+
+                <tr>
+                  <td>6</td>
+                  <td><code>Preferred Contact</code></td>
+                  <td>Preferred communication method.</td>
+                </tr>
+
+                <tr>
+                  <td>7</td>
+                  <td><code>Have You Used RD3 Tech Before?</code></td>
+                  <td>Existing-client relationship information.</td>
+                </tr>
+
+                <tr>
+                  <td>8</td>
+                  <td><code>I am contacting RD3 Tech as</code></td>
+                  <td>Client category, such as Home user, Small business, or Community organisation.</td>
+                </tr>
+
+                <tr>
+                  <td>9</td>
+                  <td><code>What sounds like your situation?</code></td>
+                  <td>High-level description of the client's situation.</td>
+                </tr>
+
+                <tr>
+                  <td>10</td>
+                  <td><code>What's happening and what would you like to achieve?</code></td>
+                  <td>Detailed description of the problem and desired outcome.</td>
+                </tr>
+
+                <tr>
+                  <td>11</td>
+                  <td><code>How Soon Do You Need Help?</code></td>
+                  <td>Client timeframe or urgency.</td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <div class="warning">
+
+            <strong>Important:</strong>
+
+            Do not casually rename or reorder these fields. If a field name
+            changes, the backend, email templates, keyword evaluation, and
+            documentation may also need to be updated.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             TEMPLATES
+             ========================================================= -->
+
+        <div class="section" id="templates">
+
+          <h2>4. Admin &amp; Client Email Templates</h2>
+
+          <h3>Admin Email</h3>
+
+          <p>
+            The Admin email is the internal notification sent to RD3 Tech.
+            It contains the complete enquiry data plus internal evaluation
+            information.
+          </p>
+
+          <p>
+            The Admin template should display every field supplied by the
+            form.
+          </p>
+
+          <h3>Client Email</h3>
+
+          <p>
+            The Client email confirms that the enquiry has been received.
+            It should also display the submitted form information so the
+            client can confirm that their details were received correctly.
+          </p>
+
+          <div class="note">
+
+            <strong>Template rule:</strong>
+
+            If a new field is added to the form, update both the Admin and
+            Client templates. Do not update only one of them.
+
+          </div>
+
+          <h3>Current client information sequence</h3>
+
+          <ol>
+
+            <li>Name</li>
+            <li>Email</li>
+            <li>Phone</li>
+            <li>Address / Location</li>
+            <li>Preferred Contact</li>
+            <li>Have You Used RD3 Tech Before?</li>
+            <li>I am contacting RD3 Tech as</li>
+            <li>What sounds like your situation?</li>
+            <li>What's happening and what would you like to achieve?</li>
+            <li>How Soon Do You Need Help?</li>
+
+          </ol>
+
+        </div>
+
+
+        <!-- =========================================================
+             ALERTS
+             ========================================================= -->
+
+        <div class="section" id="alerts">
+
+          <h2>5. Alerts &amp; Alert Types</h2>
+
+          <p>
+            The alert system evaluates the enquiry and can apply one or more
+            internal flags.
+          </p>
+
+          <div class="table-wrapper">
+
+            <table>
+
+              <thead>
+
+                <tr>
+                  <th>Alert</th>
+                  <th>Meaning</th>
+                  <th>Admin Display</th>
+                  <th>Client Display</th>
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                <tr>
+                  <td>
+                    <span class="badge badge-green">NEW INQUIRY</span>
+                  </td>
+
+                  <td>
+                    No special alert condition was detected.
+                  </td>
+
+                  <td>
+                    Yes
+                  </td>
+
+                  <td>
+                    No
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <span class="badge badge-yellow">REVIEW REQUIRED</span>
+                  </td>
+
+                  <td>
+                    The submission contains content requiring manual review.
+                  </td>
+
+                  <td>
+                    Yes
+                  </td>
+
+                  <td>
+                    No
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <span class="badge badge-orange">URGENT INQUIRY</span>
+                  </td>
+
+                  <td>
+                    The enquiry contains an urgent timeframe or urgent request.
+                  </td>
+
+                  <td>
+                    Yes
+                  </td>
+
+                  <td>
+                    No
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <span class="badge badge-red">SPAM DETECTED</span>
+                  </td>
+
+                  <td>
+                    The submission matches spam or blocking rules.
+                  </td>
+
+                  <td>
+                    Yes
+                  </td>
+
+                  <td>
+                    No
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <p>
+            More than one alert may be active at the same time. For example,
+            an enquiry can be both <strong>REVIEW REQUIRED</strong> and
+            <strong>URGENT INQUIRY</strong>.
+          </p>
+
+        </div>
+
+
+        <!-- =========================================================
+             KEYWORDS
+             ========================================================= -->
+
+        <div class="section" id="keywords">
+
+          <h2>6. Keyword Filtering</h2>
+
+          <p>
+            Keyword filtering allows the system to recognise potentially
+            important content without requiring every enquiry to be manually
+            reviewed.
+          </p>
+
+          <h3>Keyword categories</h3>
+
+          <div class="table-wrapper">
+
+            <table>
+
+              <thead>
+
+                <tr>
+                  <th>Category</th>
+                  <th>Purpose</th>
+                  <th>Typical Result</th>
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                <tr>
+                  <td><strong>Review Keywords</strong></td>
+
+                  <td>
+                    Words or phrases that indicate the enquiry may require
+                    human assessment.
+                  </td>
+
+                  <td>
+                    REVIEW REQUIRED
+                  </td>
+                </tr>
+
+                <tr>
+                  <td><strong>Urgent Keywords</strong></td>
+
+                  <td>
+                    Words or phrases indicating the client needs assistance
+                    quickly.
+                  </td>
+
+                  <td>
+                    URGENT INQUIRY
+                  </td>
+                </tr>
+
+                <tr>
+                  <td><strong>Spam Keywords</strong></td>
+
+                  <td>
+                    Words, phrases, or patterns commonly associated with
+                    unwanted submissions.
+                  </td>
+
+                  <td>
+                    SPAM DETECTED
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <h3>Example</h3>
+
+          <p>
+            A client might submit:
+          </p>
+
+          <pre>TV aerial needs tuning nintendo broken</pre>
+
+          <p>
+            If the configured review keyword list contains terms such as
+            <code>tv</code>, <code>tv aerial</code>, <code>tuned</code>, or
+            <code>nintendo</code>, the submission can be flagged for review.
+          </p>
+
+          <p>
+            If the client also selects an urgent timeframe such as
+            <code>As soon as possible</code>, the urgent evaluation can
+            independently trigger an urgent alert.
+          </p>
+
+          <div class="note">
+
+            <strong>Important:</strong>
+
+            Keyword matching should be conservative. Adding too many broad
+            keywords can create false positives and cause ordinary enquiries
+            to be unnecessarily flagged.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             TAXONOMY
+             ========================================================= -->
+
+        <div class="section" id="taxonomy">
+
+          <h2>7. Keyword Taxonomy Editor</h2>
+
+          <p>
+            The Keyword Taxonomy Editor is the management interface used to
+            maintain the classification rules without manually editing every
+            part of the application.
+          </p>
+
+          <h3>What the editor controls</h3>
+
+          <ul>
+
+            <li>Spam keywords.</li>
+
+            <li>Urgent keywords.</li>
+
+            <li>Manual review keywords.</li>
+
+            <li>Keyword groups and classifications.</li>
+
+            <li>Rules used by the evaluation system.</li>
+
+          </ul>
+
+          <h3>Recommended workflow</h3>
+
+          <ol>
+
+            <li>Open the Keyword Taxonomy Editor.</li>
+
+            <li>Identify the appropriate category.</li>
+
+            <li>Add the keyword or phrase only to the category that matches
+                its intended purpose.</li>
+
+            <li>Save the configuration.</li>
+
+            <li>Submit a controlled test enquiry.</li>
+
+            <li>Confirm that the expected alert appears in the Admin email.</li>
+
+            <li>Confirm that internal evaluation details are not exposed to
+                the Client email.</li>
+
+          </ol>
+
+          <div class="danger">
+
+            <strong>Do not use the taxonomy as a general keyword dump.</strong>
+
+            Each keyword should have a reason for existing. Poorly designed
+            keyword lists can cause excessive review alerts, false spam
+            detections, or unnecessary urgent notifications.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             MODIFYING
+             ========================================================= -->
+
+        <div class="section" id="modifying">
+
+          <h2>8. How to Modify the System</h2>
+
+          <h3>Adding a new form field</h3>
+
+          <ol>
+
+            <li>Add the field to the website form.</li>
+
+            <li>Confirm the exact field name.</li>
+
+            <li>Update the Form Responses header/order.</li>
+
+            <li>Update the backend submission mapping.</li>
+
+            <li>Update the Admin email template.</li>
+
+            <li>Update the Client email template.</li>
+
+            <li>Update any keyword or alert rules that should evaluate the
+                new field.</li>
+
+            <li>Update this documentation.</li>
+
+            <li>Run a complete test submission.</li>
+
+          </ol>
+
+          <h3>Changing an existing field</h3>
+
+          <p>
+            Treat a field-name change as a system change, not simply a visual
+            form change.
+          </p>
+
+          <pre>
+Form field
+   ↓
+Submission data
+   ↓
+Google Sheet
+   ↓
+Backend mapping
+   ↓
+Keyword evaluation
+   ↓
+Admin template
+   ↓
+Client template
+          </pre>
+
+          <p>
+            All relevant stages need to understand the new name.
+          </p>
+
+          <h3>Changing email appearance</h3>
+
+          <p>
+            Visual changes to the email templates are generally lower risk
+            than changing the underlying field mapping. Keep the existing
+            data-resolution logic intact unless there is a specific reason
+            to change it.
+          </p>
+
+        </div>
+
+
+        <!-- =========================================================
+             TESTING
+             ========================================================= -->
+
+        <div class="section" id="testing">
+
+          <h2>9. Testing</h2>
+
+          <p>
+            Always test the complete workflow after a meaningful change.
+          </p>
+
+          <h3>Basic test</h3>
+
+          <ol>
+
+            <li>Submit the form using controlled test information.</li>
+
+            <li>Confirm the submission appears in
+                <code>Form Responses</code>.</li>
+
+            <li>Confirm the Admin email arrives.</li>
+
+            <li>Confirm the Client confirmation arrives.</li>
+
+            <li>Check that every field is displayed correctly.</li>
+
+            <li>Check that field order matches the form.</li>
+
+          </ol>
+
+          <h3>Alert test</h3>
+
+          <p>
+            Test each alert independently where practical.
+          </p>
+
+          <ul>
+
+            <li>Normal submission → no special alert.</li>
+
+            <li>Review keyword → REVIEW REQUIRED.</li>
+
+            <li>Urgent request/timeframe → URGENT INQUIRY.</li>
+
+            <li>Spam test phrase → SPAM DETECTED.</li>
+
+            <li>Combined test → multiple flags where appropriate.</li>
+
+          </ul>
+
+          <div class="warning">
+
+            <strong>Testing reminder:</strong>
+
+            Test submissions should not be allowed to become permanent
+            production data. Before final launch, ensure the production
+            Form Responses sheet is clean.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             DEPLOYMENT
+             ========================================================= -->
+
+        <div class="section" id="deployment">
+
+          <h2>10. Deployment</h2>
+
+          <p>
+            When the system is ready for production, use a controlled
+            deployment process.
+          </p>
+
+          <ol>
+
+            <li>Finish and freeze the website form.</li>
+
+            <li>Finish and freeze the Admin template.</li>
+
+            <li>Finish and freeze the Client template.</li>
+
+            <li>Confirm the keyword taxonomy.</li>
+
+            <li>Run final controlled tests.</li>
+
+            <li>Remove test data from the production response sheet.</li>
+
+            <li>Ensure the production Form Responses sheet is correctly
+                linked to the form.</li>
+
+            <li>Confirm the header row is correct.</li>
+
+            <li>Deploy the final Apps Script version.</li>
+
+            <li>Perform one final live test.</li>
+
+          </ol>
+
+          <div class="success">
+
+            <strong>Production goal:</strong>
+
+            The first genuine customer submission should be the first
+            meaningful production record in the clean Form Responses sheet.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             FORM RESPONSES
+             ========================================================= -->
+
+        <div class="section" id="form-responses">
+
+          <h2>11. Form Responses Sheet</h2>
+
+          <p>
+            The <code>Form Responses</code> sheet is generated and managed
+            by the Google Form integration. It should not be treated like an
+            ordinary manually maintained spreadsheet.
+          </p>
+
+          <h3>Important behaviour</h3>
+
+          <p>
+            When a Google Form is linked to a response destination, Google
+            may create a replacement sheet such as
+            <code>Form Responses 2</code> or
+            <code>Form Responses 3</code>.
+          </p>
+
+          <p>
+            This can happen when a response sheet is deleted or a form is
+            reconnected to a spreadsheet.
+          </p>
+
+          <div class="warning">
+
+            <strong>Production reset procedure:</strong>
+
+            If the response sheet has become contaminated with test data,
+            disconnecting and reconnecting the form can be safer than trying
+            to manually destroy all rows.
+          </div>
+
+          <h3>Recommended clean-reset process</h3>
+
+          <ol>
+
+            <li>Confirm the form is no longer receiving live production
+                submissions.</li>
+
+            <li>Disconnect the existing response destination if required.</li>
+
+            <li>Reconnect the form to the intended spreadsheet.</li>
+
+            <li>Allow Google to create the new response sheet.</li>
+
+            <li>Confirm the new sheet starts with the correct header row.</li>
+
+            <li>Remove or rename obsolete response sheets only after the new
+                connection has been confirmed.</li>
+
+            <li>Confirm the production sheet is named
+                <code>Form Responses</code> where the application expects
+                that exact name.</li>
+
+            <li>Submit a controlled test.</li>
+
+            <li>Confirm the test reaches both email templates.</li>
+
+          </ol>
+
+        </div>
+
+
+        <!-- =========================================================
+             TROUBLESHOOTING
+             ========================================================= -->
+
+        <div class="section" id="troubleshooting">
+
+          <h2>12. Troubleshooting</h2>
+
+          <h3>Admin email is missing a field</h3>
+
+          <ol>
+
+            <li>Check the form field name.</li>
+
+            <li>Check the backend property name.</li>
+
+            <li>Check the Admin template resolver.</li>
+
+            <li>Check whether the field is actually present in the
+                submission object.</li>
+
+            <li>Run a new test submission.</li>
+
+          </ol>
+
+          <h3>Client email is missing a field</h3>
+
+          <p>
+            Compare the Client template against the Admin template and the
+            Form Responses header order.
+          </p>
+
+          <h3>Wrong value appears under a field</h3>
+
+          <p>
+            This normally indicates a mapping problem rather than an HTML
+            formatting problem. Check the backend field mapping before
+            changing the template.
+          </p>
+
+          <h3>Unexpected REVIEW REQUIRED alert</h3>
+
+          <p>
+            Check the Review keyword taxonomy and identify exactly which
+            keyword caused the match.
+          </p>
+
+          <h3>Unexpected SPAM DETECTED alert</h3>
+
+          <p>
+            Check the spam taxonomy and the submission text. Avoid simply
+            deleting the alert logic; first determine whether the keyword
+            itself is too broad.
+          </p>
+
+          <h3>Urgent alert appears unexpectedly</h3>
+
+          <p>
+            Check the urgent keyword list and the timeframe field.
+          </p>
+
+          <h3>Form Responses starts at an unexpected row</h3>
+
+          <p>
+            Check whether the sheet contains previous test submissions or
+            whether Google created a replacement response sheet after the
+            form was reconnected.
+          </p>
+
+        </div>
+
+
+        <!-- =========================================================
+             MAINTENANCE RULES
+             ========================================================= -->
+
+        <div class="section" id="rules">
+
+          <h2>13. Important Maintenance Rules</h2>
+
+          <div class="danger">
+
+            <strong>Rule 1 — Do not change the form casually.</strong>
+
+            Once the production form is stable, avoid unnecessary field-name
+            changes or reordering.
+
+          </div>
+
+          <div class="danger">
+
+            <strong>Rule 2 — The form is the source of truth.</strong>
+
+            The Admin and Client templates should follow the form data rather
+            than inventing a separate data structure.
+
+          </div>
+
+          <div class="note">
+
+            <strong>Rule 3 — Keep internal logic internal.</strong>
+
+            Review reasons, spam reasoning, keyword matches, and internal
+            execution guidance belong in the Admin email, not the Client
+            email.
+
+          </div>
+
+          <div class="note">
+
+            <strong>Rule 4 — Test taxonomy changes.</strong>
+
+            Every keyword change should be tested to make sure it produces
+            the intended alert and does not create unnecessary false
+            positives.
+
+          </div>
+
+          <div class="success">
+
+            <strong>Rule 5 — Keep production data clean.</strong>
+
+            Before final launch, remove test submissions or establish a
+            clean production response sheet.
+
+          </div>
+
+          <div class="warning">
+
+            <strong>Rule 6 — Make one logical change at a time.</strong>
+
+            When troubleshooting, avoid changing the form, backend,
+            taxonomy, and email templates simultaneously. Otherwise it
+            becomes difficult to identify what caused the problem.
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             SYSTEM FILES
+             ========================================================= -->
+
+        <div class="section">
+
+          <h2>14. Main System Components</h2>
+
+          <div class="file-list">
+
+            <div class="file-card">
+
+              <strong>index.html</strong>
+
+              <span>
+                Management and preview hub.
+              </span>
+
+            </div>
+
+            <div class="file-card">
+
+              <strong>AdminTemplate.html</strong>
+
+              <span>
+                Internal RD3 Tech enquiry notification.
+              </span>
+
+            </div>
+
+            <div class="file-card">
+
+              <strong>ClientTemplate.html</strong>
+
+              <span>
+                Customer enquiry confirmation.
+              </span>
+
+            </div>
+
+            <div class="file-card">
+
+              <strong>AdminUI.html</strong>
+
+              <span>
+                Keyword Taxonomy Editor and management interface.
+              </span>
+
+            </div>
+
+            <div class="file-card">
+
+              <strong>SnippetsReference.html</strong>
+
+              <span>
+                Technical snippets and diagnostic references.
+              </span>
+
+            </div>
+
+            <div class="file-card">
+
+              <strong>readme.html</strong>
+
+              <span>
+                System documentation and maintenance guide.
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             FINAL CHECKLIST
+             ========================================================= -->
+
+        <div class="section">
+
+          <h2>15. Production Checklist</h2>
+
+          <div class="table-wrapper">
+
+            <table>
+
+              <thead>
+
+                <tr>
+                  <th>Check</th>
+                  <th>Status</th>
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                <tr>
+                  <td>Production form fields are final</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Form field order is correct</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Form Responses header order is correct</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Admin template contains every form field</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Client template contains every form field</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Review keywords tested</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Urgent keywords tested</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Spam keywords tested</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Admin alert badges tested</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Client email contains no internal evaluation information</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Production response sheet is clean</td>
+                  <td>☐</td>
+                </tr>
+
+                <tr>
+                  <td>Final deployment tested</td>
+                  <td>☐</td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+
+        <!-- =========================================================
+             FOOTER
+             ========================================================= -->
+
+        <div class="footer">
+
+          <strong>RD3 Tech</strong><br>
+
+          Technology Support &amp; Business Solutions<br>
+
+          <a href="mailto:tom@rd3tech.com">
+            tom@rd3tech.com
+          </a>
+
+          &nbsp;|&nbsp;
+
+          <a href="https://rd3tech.com/">
+            rd3tech.com
+          </a>
+
+          <br>
+
+          <a class="back-top" href="#top">
+            ↑ Back to top
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </body>
+</html>

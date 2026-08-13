@@ -115,7 +115,23 @@
         color: #ffffff;
       }
 
+      .badge-green {
+        background-color: #16a34a;
+        color: #ffffff;
+      }
+
+      .badge-orange {
+        background-color: #ea580c;
+        color: #ffffff;
+      }
+
+      .badge-red {
+        background-color: #dc2626;
+        color: #ffffff;
+      }
+
       @media (max-width: 600px) {
+
         .container {
           margin: 20px auto;
           padding: 10px;
@@ -138,32 +154,81 @@
           flex-direction: column;
           gap: 6px;
         }
+
       }
     </style>
   </head>
+
 
   <body>
 
     <div class="container">
 
+
+      <!-- =========================================================
+           HEADER
+           ========================================================= -->
+
       <div class="header">
-        <h1>RD3 TECH — Management &amp; Preview Hub</h1>
+
+        <h1>
+          RD3 TECH — Management &amp; Preview Hub
+        </h1>
+
       </div>
+
 
       <div class="card-grid">
 
-        <p style="margin-top: 0; margin-bottom: 20px; font-size: 14px; color: #475569;">
-          Select a template preview or management tool below:
+
+        <p
+          style="
+            margin-top:0;
+            margin-bottom:20px;
+            font-size:14px;
+            color:#475569;
+          "
+        >
+          Select a template preview, reference document, or management
+          tool below.
         </p>
 
 
-        <!-- ========================================= -->
-        <!-- REFERENCE MATERIALS -->
-        <!-- ========================================= -->
+        <!-- =========================================================
+             REFERENCE MATERIALS
+             ========================================================= -->
 
         <div class="section-label">
           Reference Materials
         </div>
+
+
+        <!-- README -->
+
+        <a
+          class="nav-item accent-blue"
+          href="<?= baseUrl ?>?page=Readme"
+        >
+
+          <div class="nav-title">
+
+            <span>
+              📖 RD3 Tech System README
+            </span>
+
+            <span class="badge badge-purple">
+              Documentation
+            </span>
+
+          </div>
+
+          <div class="nav-desc">
+            Complete system documentation covering setup, deployment,
+            form configuration, keyword filtering, alerts, taxonomy
+            management, email templates, testing, and modification.
+          </div>
+
+        </a>
 
 
         <!-- SNIPPETS REFERENCE -->
@@ -172,22 +237,30 @@
           class="nav-item accent-blue"
           href="<?= baseUrl ?>?page=SnippetsReference"
         >
+
           <div class="nav-title">
-            <span>📚 RD3 Snippets Reference Library</span>
+
+            <span>
+              📚 RD3 Snippets Reference Library
+            </span>
+
             <span class="badge badge-purple">
               Technical Reference
             </span>
+
           </div>
 
           <div class="nav-desc">
-            View shortcode implementation code, diagnostic test scripts, and cURL redirect handlers.
+            View shortcode implementation code, diagnostic test scripts,
+            and cURL redirect handlers.
           </div>
+
         </a>
 
 
-        <!-- ========================================= -->
-        <!-- EMAIL TEMPLATES -->
-        <!-- ========================================= -->
+        <!-- =========================================================
+             EMAIL TEMPLATES
+             ========================================================= -->
 
         <div class="section-label">
           Email Templates
@@ -200,16 +273,24 @@
           class="nav-item"
           href="<?= baseUrl ?>?page=AdminTemplate"
         >
+
           <div class="nav-title">
-            <span>🚀 Admin Notification Email (Default)</span>
-            <span class="badge">
+
+            <span>
+              🚀 Admin Notification Email (Default)
+            </span>
+
+            <span class="badge badge-green">
               Green Badge
             </span>
+
           </div>
 
           <div class="nav-desc">
-            Standard inquiry alert sent to RD3 Tech internal admin team.
+            Standard inquiry alert sent to the RD3 Tech internal
+            administration team.
           </div>
+
         </a>
 
 
@@ -219,16 +300,24 @@
           class="nav-item"
           href="<?= baseUrl ?>?page=AdminTemplate&amp;mode=urgent"
         >
+
           <div class="nav-title">
-            <span>🔥 Admin Notification Email (Urgent Mode)</span>
-            <span class="badge">
+
+            <span>
+              🔥 Admin Notification Email (Urgent Mode)
+            </span>
+
+            <span class="badge badge-orange">
               Orange Badge
             </span>
+
           </div>
 
           <div class="nav-desc">
-            High-priority emergency request containing critical outage keywords.
+            High-priority inquiry containing urgent or emergency
+            timeframe indicators.
           </div>
+
         </a>
 
 
@@ -238,16 +327,24 @@
           class="nav-item"
           href="<?= baseUrl ?>?page=AdminTemplate&amp;mode=review"
         >
+
           <div class="nav-title">
-            <span>⚠️ Admin Notification Email (Review Required)</span>
+
+            <span>
+              ⚠️ Admin Notification Email (Review Required)
+            </span>
+
             <span class="badge">
               Gold Badge
             </span>
+
           </div>
 
           <div class="nav-desc">
-            Inquiry flagged for manual review prior to automated processing.
+            Inquiry flagged for manual review because one or more
+            configured review rules were triggered.
           </div>
+
         </a>
 
 
@@ -257,16 +354,24 @@
           class="nav-item"
           href="<?= baseUrl ?>?page=AdminTemplate&amp;mode=spam"
         >
+
           <div class="nav-title">
-            <span>🛑 Admin Notification Email (Spam Flagged)</span>
-            <span class="badge">
+
+            <span>
+              🛑 Admin Notification Email (Spam Flagged)
+            </span>
+
+            <span class="badge badge-red">
               Red Badge
             </span>
+
           </div>
 
           <div class="nav-desc">
-            Inquiry containing blocklist terms or bot triggers.
+            Inquiry containing configured spam, blocklist, or bot
+            detection terms.
           </div>
+
         </a>
 
 
@@ -276,49 +381,66 @@
           class="nav-item"
           href="<?= baseUrl ?>?page=ClientTemplate"
         >
+
           <div class="nav-title">
-            <span>✉️ Customer Confirmation Email</span>
+
+            <span>
+              ✉️ Customer Confirmation Email
+            </span>
+
             <span class="badge">
               Auto-Responder
             </span>
+
           </div>
 
           <div class="nav-desc">
-            Confirmation email sent to clients upon successful form submission.
+            Confirmation email sent to clients after successful
+            form submission.
           </div>
+
         </a>
 
 
-        <!-- ========================================= -->
-        <!-- MANAGEMENT TOOLS -->
-        <!-- ========================================= -->
+        <!-- =========================================================
+             MANAGEMENT TOOLS
+             ========================================================= -->
 
         <div class="section-label">
           Management Tools
         </div>
 
 
-        <!-- ADMIN UI -->
+        <!-- ADMIN UI / TAXONOMY EDITOR -->
 
         <a
           class="nav-item accent-blue"
           href="<?= baseUrl ?>?page=AdminUI"
         >
+
           <div class="nav-title">
-            <span>⚙️ Keyword Taxonomy Editor</span>
+
+            <span>
+              ⚙️ Keyword Taxonomy Editor
+            </span>
+
             <span class="badge">
               JSON Configuration
             </span>
+
           </div>
 
           <div class="nav-desc">
-            Management interface for updating spam, urgent, and manual review keyword rules.
+            Management interface for updating spam, urgent, and
+            manual-review keyword rules and alert classifications.
           </div>
+
         </a>
 
+
       </div>
+
     </div>
 
   </body>
 </html>
-
