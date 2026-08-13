@@ -19,7 +19,9 @@
                  border:1px solid #cbd5e1; overflow:hidden;
                  font-family:Arial, sans-serif; color:#1e293b;">
 
-          <!-- Header -->
+          <!-- =========================================================
+               HEADER
+               ========================================================= -->
           <tr>
             <td style="background-color:#993333; padding:24px 30px; color:#ffffff;">
 
@@ -69,13 +71,17 @@
           </tr>
 
 
-          <!-- Payload Extractors -->
+          <!-- =========================================================
+               DATA RESOLUTION
+               ========================================================= -->
+
           <?
+
             /*
-             * Resolve the available data object.
+             * Resolve the available submission object.
              *
-             * We check several possible objects because the EmailService
-             * may provide the submission under different names.
+             * The EmailService may expose submission data through
+             * submission, payload, lead, or data.
              */
 
             var p =
@@ -97,119 +103,155 @@
 
 
             /*
-             * Basic client information.
+             * Safe first-value resolver.
              */
 
-            var vName =
-              (typeof name !== 'undefined' && name)
-                ? name
-                : p.name;
+            function firstValue() {
 
-            var vEmail =
-              (typeof email !== 'undefined' && email)
-                ? email
-                : p.email;
+              for (var i = 0; i < arguments.length; i++) {
 
-            var vPhone =
-              (typeof phone !== 'undefined' && phone)
-                ? phone
-                : p.phone;
+                var value = arguments[i];
 
-            var vAddress =
-              (typeof address !== 'undefined' && address)
-                ? address
-                : p.address;
+                if (
+                  value !== undefined &&
+                  value !== null &&
+                  String(value).trim() !== ''
+                ) {
+                  return value;
+                }
+
+              }
+
+              return '';
+            }
 
 
             /*
-             * Preferred Contact
+             * HTML escaping.
              */
 
-            var vPreferredContact =
-              (typeof preferredContact !== 'undefined' && preferredContact)
+            function escapeHtml(value) {
+
+              return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            }
+
+
+            /*
+             * =========================================================
+             * FORM FIELDS
+             * =========================================================
+             */
+
+
+            // 1. Name
+            var vName = firstValue(
+              typeof name !== 'undefined' ? name : '',
+              p.name
+            );
+
+
+            // 2. Email
+            var vEmail = firstValue(
+              typeof email !== 'undefined' ? email : '',
+              p.email
+            );
+
+
+            // 3. Phone
+            var vPhone = firstValue(
+              typeof phone !== 'undefined' ? phone : '',
+              p.phone
+            );
+
+
+            // 4. Address / Location
+            var vAddress = firstValue(
+              typeof address !== 'undefined' ? address : '',
+              p.address
+            );
+
+
+            // 5. Preferred Contact
+            var vPreferredContact = firstValue(
+              typeof preferredContact !== 'undefined'
                 ? preferredContact
-                : p.preferredContact;
+                : '',
+              p.preferredContact
+            );
 
 
-            /*
-             * Have you used RD3 Tech before?
-             *
-             * NEW FIELD
-             *
-             * Preferred property:
-             *   hasUsedRd3Tech
-             *
-             * Compatibility fallbacks are retained so existing submissions
-             * continue to work while the form/backend is being updated.
-             */
-
-            var vHasUsedRd3Tech =
-              (typeof hasUsedRd3Tech !== 'undefined' && hasUsedRd3Tech)
+            // 6. Have You Used RD3 Tech Before?
+            var vHasUsedRd3Tech = firstValue(
+              typeof hasUsedRd3Tech !== 'undefined'
                 ? hasUsedRd3Tech
-                : (
-                    p.hasUsedRd3Tech ||
-                    p.usedRd3Tech ||
-                    p.rd3TechBefore ||
-                    p.relationship ||
-                    (
-                      typeof relationship !== 'undefined'
-                        ? relationship
-                        : ''
-                    )
-                  );
+                : '',
+              p.hasUsedRd3Tech,
+              p.usedRd3Tech,
+              p.rd3TechBefore,
+              p.relationship,
+              typeof relationship !== 'undefined'
+                ? relationship
+                : ''
+            );
 
 
-            /*
-             * Request classification.
-             */
-
-            var vUserType =
-              (typeof userType !== 'undefined' && userType)
+            // 7. I am contacting RD3 Tech as:
+            var vUserType = firstValue(
+              typeof userType !== 'undefined'
                 ? userType
-                : (
-                    p.userType ||
-                    p.category ||
-                    (
-                      typeof category !== 'undefined'
-                        ? category
-                        : ''
-                    )
-                  );
+                : '',
+              p.userType,
+              p.category,
+              typeof category !== 'undefined'
+                ? category
+                : ''
+            );
 
 
-            var vSituation =
-              (typeof situation !== 'undefined' && situation)
+            // 8. What sounds like your situation?
+            var vSituation = firstValue(
+              typeof situation !== 'undefined'
                 ? situation
-                : (
-                    p.situation ||
-                    p.subject
-                  );
+                : '',
+              p.situation,
+              p.subject
+            );
 
 
-            var vGoal =
-              (typeof achievement !== 'undefined' && achievement)
+            // 9. What's happening and what would you like to achieve?
+            var vGoal = firstValue(
+              typeof achievement !== 'undefined'
                 ? achievement
-                : (
-                    p.achievement ||
-                    p.message ||
-                    p.goal ||
-                    (
-                      typeof goal !== 'undefined'
-                        ? goal
-                        : ''
-                    )
-                  );
+                : '',
+              p.achievement,
+              p.message,
+              p.goal,
+              typeof goal !== 'undefined'
+                ? goal
+                : ''
+            );
 
 
-            var vTimeframe =
-              (typeof timeframe !== 'undefined' && timeframe)
+            // 10. How Soon Do You Need Help?
+            var vTimeframe = firstValue(
+              typeof timeframe !== 'undefined'
                 ? timeframe
-                : p.timeframe;
+                : '',
+              p.timeframe
+            );
 
           ?>
 
 
-          <!-- Body -->
+          <!-- =========================================================
+               BODY
+               ========================================================= -->
           <tr>
             <td style="padding:30px; background-color:#ffffff;">
 
@@ -218,7 +260,7 @@
                         margin-top:0; margin-bottom:20px;">
 
                 Hi
-                <strong><?= vName ? vName : 'there' ?></strong>,
+                <strong><?= escapeHtml(vName) || 'there' ?></strong>,
 
                 <br><br>
 
@@ -229,7 +271,10 @@
               </p>
 
 
-              <!-- Summary -->
+              <!-- =====================================================
+                   SUMMARY
+                   ===================================================== -->
+
               <div style="font-size:13px; font-weight:700; color:#993333;
                           text-transform:uppercase; letter-spacing:0.5px;
                           margin:24px 0 14px 0; padding-bottom:6px;
@@ -240,11 +285,18 @@
               </div>
 
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                border="0"
-                style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+              <table role="presentation"
+                     width="100%"
+                     cellpadding="0"
+                     cellspacing="0"
+                     border="0"
+                     style="width:100%; border-collapse:collapse; margin-bottom:24px;">
 
-                <!-- Name -->
+
+                <!-- =================================================
+                     1. NAME
+                     ================================================= -->
+
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#64748b; font-weight:600;
@@ -254,12 +306,15 @@
 
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#0f172a;">
-                    <?= vName ? vName : 'Not provided' ?>
+                    <?= escapeHtml(vName) || 'Not provided' ?>
                   </td>
                 </tr>
 
 
-                <!-- Email -->
+                <!-- =================================================
+                     2. EMAIL
+                     ================================================= -->
+
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#64748b; font-weight:600;">
@@ -272,10 +327,10 @@
                     <? if (vEmail) { ?>
 
                       <a
-                        href="mailto:<?= vEmail ?>"
+                        href="mailto:<?= encodeURIComponent(vEmail) ?>"
                         style="color:#993333; text-decoration:underline;"
                       >
-                        <?= vEmail ?>
+                        <?= escapeHtml(vEmail) ?>
                       </a>
 
                     <? } else { ?>
@@ -288,8 +343,9 @@
                 </tr>
 
 
-                <!-- Phone -->
-                <? if (vPhone && vPhone !== 'N/A') { ?>
+                <!-- =================================================
+                     3. PHONE
+                     ================================================= -->
 
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
@@ -299,33 +355,31 @@
 
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#0f172a;">
-                    <?= vPhone ?>
+                    <?= escapeHtml(vPhone) || 'Not provided' ?>
                   </td>
                 </tr>
 
-                <? } ?>
 
-
-                <!-- Location -->
-                <? if (vAddress && vAddress !== 'N/A') { ?>
+                <!-- =================================================
+                     4. ADDRESS / LOCATION
+                     ================================================= -->
 
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#64748b; font-weight:600;">
-                    Location:
+                    Address / Location:
                   </td>
 
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#0f172a;">
-                    <?= vAddress ?>
+                    <?= escapeHtml(vAddress) || 'Not provided' ?>
                   </td>
                 </tr>
 
-                <? } ?>
 
-
-                <!-- Preferred Contact -->
-                <? if (vPreferredContact && vPreferredContact !== 'N/A') { ?>
+                <!-- =================================================
+                     5. PREFERRED CONTACT
+                     ================================================= -->
 
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
@@ -335,92 +389,102 @@
 
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#0f172a;">
-                    <?= vPreferredContact ?>
-                  </td>
-                </tr>
-
-                <? } ?>
-
-
-                <!-- NEW: Have you used RD3 Tech before? -->
-                <tr>
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#64748b; font-weight:600;">
-                    Have you used RD3 Tech before?
-                  </td>
-
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#0f172a;">
-
-                    <?= vHasUsedRd3Tech ? vHasUsedRd3Tech : 'Not provided' ?>
-
+                    <?= escapeHtml(vPreferredContact) || 'Not provided' ?>
                   </td>
                 </tr>
 
 
-                <!-- Category -->
-                <tr>
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#64748b; font-weight:600;">
-                    Category:
-                  </td>
-
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#0f172a;">
-                    <?= vUserType ? vUserType : 'Not provided' ?>
-                  </td>
-                </tr>
-
-
-                <!-- Situation -->
-                <tr>
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#64748b; font-weight:600;">
-                    Situation:
-                  </td>
-
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#0f172a;">
-                    <?= vSituation ? vSituation : 'Not provided' ?>
-                  </td>
-                </tr>
-
-
-                <!-- Goal -->
-                <tr>
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#64748b; font-weight:600;">
-                    Goal / Desired Outcome:
-                  </td>
-
-                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
-                             font-size:14px; color:#0f172a;">
-                    <?= vGoal ? vGoal : 'Not provided' ?>
-                  </td>
-                </tr>
-
-
-                <!-- Timeframe -->
-                <? if (vTimeframe && vTimeframe !== 'N/A') { ?>
+                <!-- =================================================
+                     6. HAVE YOU USED RD3 TECH BEFORE?
+                     ================================================= -->
 
                 <tr>
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#64748b; font-weight:600;">
-                    Timeframe:
+                    Have You Used RD3 Tech Before?
                   </td>
 
                   <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
                              font-size:14px; color:#0f172a;">
-                    <?= vTimeframe ?>
+                    <?= escapeHtml(vHasUsedRd3Tech) || 'Not provided' ?>
                   </td>
                 </tr>
 
-                <? } ?>
+
+                <!-- =================================================
+                     7. I AM CONTACTING RD3 TECH AS
+                     ================================================= -->
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    I am contacting RD3 Tech as:
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= escapeHtml(vUserType) || 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- =================================================
+                     8. SITUATION
+                     ================================================= -->
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    What sounds like your situation?
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= escapeHtml(vSituation) || 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- =================================================
+                     9. GOAL / DESIRED OUTCOME
+                     ================================================= -->
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    What's happening and what would you like to achieve?
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= escapeHtml(vGoal) || 'Not provided' ?>
+                  </td>
+                </tr>
+
+
+                <!-- =================================================
+                     10. TIMEFRAME
+                     ================================================= -->
+
+                <tr>
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#64748b; font-weight:600;">
+                    How Soon Do You Need Help?
+                  </td>
+
+                  <td style="padding:10px 0; border-bottom:1px solid #f1f5f9;
+                             font-size:14px; color:#0f172a;">
+                    <?= escapeHtml(vTimeframe) || 'Not provided' ?>
+                  </td>
+                </tr>
 
               </table>
 
 
-              <!-- What Happens Next -->
+              <!-- =====================================================
+                   WHAT HAPPENS NEXT
+                   ===================================================== -->
+
               <div style="border-left:4px solid #993333;
                           background-color:#f8fafc;
                           border-top:1px solid #e2e8f0;
@@ -541,7 +605,10 @@
               </div>
 
 
-              <!-- Additional Information -->
+              <!-- =====================================================
+                   ADDITIONAL INFORMATION
+                   ===================================================== -->
+
               <p style="font-size:14px; line-height:1.5; color:#475569;
                         margin-bottom:24px;">
 
@@ -552,7 +619,10 @@
               </p>
 
 
-              <!-- Signature -->
+              <!-- =====================================================
+                   SIGNATURE
+                   ===================================================== -->
+
               <div style="font-size:14px; line-height:1.5; color:#0f172a;
                           padding-top:16px; border-top:1px solid #e2e8f0;">
 
@@ -588,7 +658,10 @@
           </tr>
 
 
-          <!-- Footer -->
+          <!-- =========================================================
+               FOOTER
+               ========================================================= -->
+
           <tr>
             <td style="background-color:#f1f5f9; padding:16px 30px;
                        text-align:center; font-size:12px; color:#64748b;
