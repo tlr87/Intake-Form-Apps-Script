@@ -33,7 +33,7 @@ Documentation
 *   [Maintenance](#maintenance)
 *   [Handover Checklist](#handover)
 
-![RD3 Tech Logo](https://i0.wp.com/rd3tech.com/wp-content/uploads/2023/03/cropped-RD3Logo.png?resize=300%2C300&ssl=1)
+![RD3 Tech Logo](https://i0.wp.com/rd3tech.com/wp-content/uploads/2023/03/cropped-RD3Logo.png?resize=50%2C50&ssl=1)
 
 RD3 Tech — Enquiry & Lead Processing System
 ===========================================
