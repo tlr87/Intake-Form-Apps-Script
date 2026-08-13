@@ -1,5 +1,3 @@
-Here is a GitHub-ready README:
-
 # RD3 Tech — Enquiry & Lead Processing System
 
 A Google Apps Script-based enquiry processing system for RD3 Tech.
