@@ -1104,11 +1104,10 @@ function testSpamThreshold() {
       ""
   };
 
-  var result =
-    evaluateSubmission(
-      testPayload,
-      normalizeInputKeys(testPayload)
-    );
+var result =
+  Evaluation.evaluateLead(
+    testPayload
+  );
 
   Logger.log(
     "Evaluation Result: " +

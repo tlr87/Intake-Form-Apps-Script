@@ -1,41 +1,52 @@
-
 /**
  * Lead Evaluation & Risk Analysis Module
- * Analyzes incoming payloads for spam, honeypot traps, urgency, and review keywords
- * utilizing TaxonomyService configuration with CONFIG.DEFAULT_TAXONOMY fallbacks.
+ *
+ * Single source of truth for:
+ * - Spam detection
+ * - Honeypot detection
+ * - Review keywords
+ * - Urgency detection
+ * - Suspicious phone numbers
+ *
+ * Taxonomy source:
+ *   TaxonomyService.getTaxonomy()
+ *
+ * Fallback:
+ *   CONFIG.DEFAULT_TAXONOMY
  */
+
 var Evaluation = (function () {
 
   function toStr(val) {
     if (!val) return '';
-    if (Array.isArray(val)) return val.join(', ').trim();
+
+    if (Array.isArray(val)) {
+      return val.join(', ').trim();
+    }
+
     return String(val).trim();
   }
 
+
+  /**
+   * Evaluates an incoming submission.
+   *
+   * Returns the canonical evaluation object used by
+   * EmailService.processSubmission().
+   */
   function evaluateLead(payload) {
-    var spamScore = 0;
-    var flags = [];
-    var isUrgent = false;
 
     payload = payload || {};
 
-    /**
-     * ============================================================================
-     * TAXONOMY LOADING
-     * ============================================================================
-     *
-     * The live taxonomy is stored in Script Properties as:
-     *     KEYWORD_TAXONOMY_JSON
-     *
-     * TaxonomyService.getTaxonomy() retrieves the active taxonomy.
-     *
-     * Evaluation uses the live taxonomy first.
-     * If an individual category is missing or empty, it falls back to the
-     * corresponding category in CONFIG.DEFAULT_TAXONOMY.
-     *
-     * Config.gs remains the single source of default taxonomy values.
-     * ============================================================================
-     */
+    var spamScore = 0;
+    var flags = [];
+    var isUrgent = false;
+    var matchesReview = false;
+
+
+    /* ==========================================================================
+     * TAXONOMY
+     * ======================================================================== */
 
     var taxonomy = {};
 
@@ -43,126 +54,190 @@ var Evaluation = (function () {
       typeof TaxonomyService !== 'undefined' &&
       typeof TaxonomyService.getTaxonomy === 'function'
     ) {
-      taxonomy = TaxonomyService.getTaxonomy() || {};
+      taxonomy =
+        TaxonomyService.getTaxonomy() || {};
     }
 
-    /**
-     * Spam keyword list.
-     *
-     * Priority:
-     * 1. Live taxonomy from KEYWORD_TAXONOMY_JSON
-     * 2. CONFIG.DEFAULT_TAXONOMY.spamKeywords
-     */
+    var defaultTaxonomy =
+      (
+        typeof CONFIG !== 'undefined' &&
+        CONFIG.DEFAULT_TAXONOMY
+      )
+        ? CONFIG.DEFAULT_TAXONOMY
+        : {};
+
+
     var spamKeywords =
-      (taxonomy.spamKeywords && taxonomy.spamKeywords.length)
+      (
+        taxonomy.spamKeywords &&
+        taxonomy.spamKeywords.length
+      )
         ? taxonomy.spamKeywords
-        : CONFIG.DEFAULT_TAXONOMY.spamKeywords;
+        : (
+            defaultTaxonomy.spamKeywords || []
+          );
 
-    /**
-     * Review keyword list.
-     *
-     * Priority:
-     * 1. Live taxonomy from KEYWORD_TAXONOMY_JSON
-     * 2. CONFIG.DEFAULT_TAXONOMY.reviewKeywords
-     */
+
     var reviewKeywords =
-      (taxonomy.reviewKeywords && taxonomy.reviewKeywords.length)
+      (
+        taxonomy.reviewKeywords &&
+        taxonomy.reviewKeywords.length
+      )
         ? taxonomy.reviewKeywords
-        : CONFIG.DEFAULT_TAXONOMY.reviewKeywords;
+        : (
+            defaultTaxonomy.reviewKeywords || []
+          );
 
-    /**
-     * Urgent keyword list.
-     *
-     * Priority:
-     * 1. Live taxonomy from KEYWORD_TAXONOMY_JSON
-     * 2. CONFIG.DEFAULT_TAXONOMY.urgentKeywords
-     */
+
     var urgentKeywords =
-      (taxonomy.urgentKeywords && taxonomy.urgentKeywords.length)
+      (
+        taxonomy.urgentKeywords &&
+        taxonomy.urgentKeywords.length
+      )
         ? taxonomy.urgentKeywords
-        : CONFIG.DEFAULT_TAXONOMY.urgentKeywords;
+        : (
+            defaultTaxonomy.urgentKeywords || []
+          );
 
-    // 2. Extract standard properties
+
+    /* ==========================================================================
+     * STANDARD FIELD EXTRACTION
+     * ======================================================================== */
+
     var situation =
       toStr(
         payload.situation ||
-        payload['Situation'] ||
-        payload['entry.650060968']
+        payload.Situation ||
+        payload['entry.650060968'] ||
+        payload['entry_650060968']
       );
+
 
     var achievement =
       toStr(
         payload.achievement ||
         payload.goal ||
+        payload.desired_outcome ||
         payload['Goal / Desired Outcome'] ||
-        payload['entry.483026621']
+        payload['What Are You Trying To Achieve?'] ||
+        payload['entry.483026621'] ||
+        payload['entry_483026621']
       );
+
 
     var userType =
       toStr(
         payload.userType ||
         payload.category ||
-        payload['Category'] ||
-        payload['entry.343301224']
+        payload.Category ||
+        payload['User Type'] ||
+        payload['entry.343301224'] ||
+        payload['entry_343301224']
       );
+
 
     var timeframe =
       toStr(
         payload.timeframe ||
-        payload['Timeframe'] ||
-        payload['entry.1883892334']
+        payload.Timeframe ||
+        payload.urgency ||
+        payload.timeline ||
+        payload['How Soon Do You Need Help?'] ||
+        payload['entry.1883892334'] ||
+        payload['entry_1883892334']
       );
+
 
     var phone =
       toStr(
         payload.phone ||
-        payload['Phone'] ||
-        payload['entry.1285532466']
+        payload.Phone ||
+        payload.phoneNumber ||
+        payload.phone_number ||
+        payload.mobile ||
+        payload['Contact Number'] ||
+        payload['entry.1285532466'] ||
+        payload['entry_1285532466']
       );
+
 
     var honeypot =
       toStr(
         payload.honeypot ||
-        payload['Honeypot'] ||
-        payload['website_hp']
+        payload.Honeypot ||
+        payload.website ||
+        payload.website_hp ||
+        payload.website_url_hp ||
+        payload[CONFIG && CONFIG.HONEYPOT_FIELD]
       );
 
-    // Catch-all: Push both KEY and VALUE with explicit spaces so text never mashes together
+
+    /* ==========================================================================
+     * FULL PAYLOAD TEXT
+     * ======================================================================== */
+
     var allPayloadTokens = [];
 
     for (var key in payload) {
-      if (payload.hasOwnProperty(key)) {
-        allPayloadTokens.push(key);
-        allPayloadTokens.push(toStr(payload[key]));
+
+      if (
+        !payload.hasOwnProperty(key)
+      ) {
+        continue;
       }
+
+      allPayloadTokens.push(key);
+      allPayloadTokens.push(
+        toStr(payload[key])
+      );
     }
+
 
     var rawCombined =
-      allPayloadTokens.join(" ") +
-      " " +
+      allPayloadTokens.join(' ') +
+      ' ' +
       situation +
-      " " +
+      ' ' +
       achievement +
-      " " +
+      ' ' +
       timeframe;
 
-    // Normalize fullText wrapped with leading/trailing spaces
+
     var fullText =
-      " " +
+      ' ' +
       rawCombined
         .toLowerCase()
-        .replace(/\s+/g, " ") +
-      " ";
+        .replace(/\s+/g, ' ')
+        .trim() +
+      ' ';
 
-    // 3. Check Honeypot Trap
+
+    /* ==========================================================================
+     * HONEYPOT
+     * ======================================================================== */
+
     if (honeypot !== '') {
+
       spamScore += 100;
-      flags.push("Honeypot Triggered ('" + honeypot + "')");
+
+      flags.push(
+        "Honeypot Triggered ('" +
+        honeypot +
+        "')"
+      );
+
     }
 
-    // 4. Check Suspicious Phone Numbers
+
+    /* ==========================================================================
+     * PHONE VALIDATION
+     * ======================================================================== */
+
     if (phone !== '') {
-      var cleanPhone = phone.replace(/\D/g, '');
+
+      var cleanPhone =
+        phone.replace(/\D/g, '');
+
 
       if (
         /^0+$/.test(cleanPhone) ||
@@ -172,152 +247,424 @@ var Evaluation = (function () {
           cleanPhone.length < 7
         )
       ) {
+
         spamScore += 30;
-        flags.push("Suspicious Phone Number ('" + phone + "')");
+
+        flags.push(
+          "Suspicious Phone Number ('" +
+          phone +
+          "')"
+        );
+
       }
+
     }
 
-    // 5. Check Spam Keywords
-    spamKeywords.forEach(function (term) {
-      if (!term) return;
 
-      var cleanTerm = term
-        .toString()
-        .toLowerCase()
-        .trim();
+    /* ==========================================================================
+     * SPAM KEYWORDS
+     * ======================================================================== */
 
-      if (
-        cleanTerm !== '' &&
-        fullText.indexOf(cleanTerm) !== -1
-      ) {
-        spamScore += 30;
-        flags.push(
-          "Spam Keyword Matched: '" + term + "'"
-        );
-      }
-    });
+    var spamMatches = [];
 
-    // 6. Check Review Keywords
-    // Supports strict whole-word matching for short terms such as "TV"
-    // and substring matching for longer phrases such as "TV aerial".
-    var matchesReview = false;
-    var seenMatches = {};
+    spamKeywords.forEach(
+      function (term) {
 
-    reviewKeywords.forEach(function (term) {
-      if (!term) return;
-
-      var cleanTerm = term
-        .toString()
-        .toLowerCase()
-        .trim();
-
-      if (
-        cleanTerm === '' ||
-        seenMatches[cleanTerm]
-      ) {
-        return;
-      }
-
-      var isMatch = false;
-
-      if (cleanTerm.length <= 3) {
-
-        var rx = new RegExp(
-          '(^|[^a-z0-9])' +
-          cleanTerm +
-          '($|[^a-z0-9])',
-          'i'
-        );
-
-        if (rx.test(fullText)) {
-          isMatch = true;
+        if (!term) {
+          return;
         }
 
-      } else {
+        var cleanTerm =
+          term
+            .toString()
+            .toLowerCase()
+            .trim();
 
-        if (fullText.indexOf(cleanTerm) !== -1) {
-          isMatch = true;
+
+        if (
+          cleanTerm !== '' &&
+          fullText.indexOf(cleanTerm) !== -1
+        ) {
+
+          if (
+            spamMatches.indexOf(cleanTerm) === -1
+          ) {
+
+            spamMatches.push(
+              cleanTerm
+            );
+
+            spamScore += 30;
+
+            flags.push(
+              "Spam Keyword Matched: '" +
+              term +
+              "'"
+            );
+
+          }
+
         }
+
       }
+    );
 
-      if (isMatch) {
-        matchesReview = true;
-        seenMatches[cleanTerm] = true;
 
-        flags.push(
-          "Flagged Review Keyword: '" +
-          term +
-          "'"
-        );
+    /* ==========================================================================
+     * REVIEW KEYWORDS
+     * ======================================================================== */
+
+    var reviewMatches = [];
+    var seenReviewMatches = {};
+
+
+    reviewKeywords.forEach(
+      function (term) {
+
+        if (!term) {
+          return;
+        }
+
+        var cleanTerm =
+          term
+            .toString()
+            .toLowerCase()
+            .trim();
+
+
+        if (
+          cleanTerm === '' ||
+          seenReviewMatches[cleanTerm]
+        ) {
+          return;
+        }
+
+
+        var isMatch = false;
+
+
+        /*
+         * Short terms such as "TV" use whole-word matching.
+         */
+        if (
+          cleanTerm.length <= 3
+        ) {
+
+          var rx =
+            new RegExp(
+              '(^|[^a-z0-9])' +
+              escapeRegExp(cleanTerm) +
+              '($|[^a-z0-9])',
+              'i'
+            );
+
+
+          if (
+            rx.test(fullText)
+          ) {
+
+            isMatch = true;
+
+          }
+
+        } else {
+
+          /*
+           * Longer terms use substring matching.
+           */
+          if (
+            fullText.indexOf(cleanTerm) !== -1
+          ) {
+
+            isMatch = true;
+
+          }
+
+        }
+
+
+        if (isMatch) {
+
+          matchesReview = true;
+
+          seenReviewMatches[cleanTerm] = true;
+
+          reviewMatches.push(
+            cleanTerm
+          );
+
+          flags.push(
+            "Flagged Review Keyword: '" +
+            term +
+            "'"
+          );
+
+        }
+
       }
-    });
+    );
 
-    // 7. Urgency Evaluation
-    var tfLower = timeframe.toLowerCase();
 
-    urgentKeywords.forEach(function (uTerm) {
-      var cleanUTerm = uTerm
-        .toString()
-        .toLowerCase()
-        .trim();
+    /* ==========================================================================
+     * URGENCY
+     * ======================================================================== */
 
-      if (
-        cleanUTerm !== '' &&
-        (
-          tfLower.indexOf(cleanUTerm) !== -1 ||
-          fullText.indexOf(cleanUTerm) !== -1
-        )
-      ) {
-        isUrgent = true;
+    var timeframeLower =
+      timeframe.toLowerCase();
+
+
+    var urgentMatches = [];
+
+
+    urgentKeywords.forEach(
+      function (term) {
+
+        if (!term) {
+          return;
+        }
+
+        var cleanTerm =
+          term
+            .toString()
+            .toLowerCase()
+            .trim();
+
+
+        if (!cleanTerm) {
+          return;
+        }
+
+
+        if (
+          timeframeLower.indexOf(cleanTerm) !== -1 ||
+          fullText.indexOf(cleanTerm) !== -1
+        ) {
+
+          if (
+            urgentMatches.indexOf(cleanTerm) === -1
+          ) {
+
+            urgentMatches.push(
+              cleanTerm
+            );
+
+          }
+
+        }
+
       }
-    });
+    );
 
-    // Additional protection for the standard urgent phrases
+
+    /*
+     * Standard urgent phrases.
+     */
     if (
-      tfLower.indexOf('asap') !== -1 ||
-      tfLower.indexOf('as soon as possible') !== -1
+      timeframeLower.indexOf('asap') !== -1
     ) {
+
+      if (
+        urgentMatches.indexOf('asap') === -1
+      ) {
+
+        urgentMatches.push('asap');
+
+      }
+
+    }
+
+
+    if (
+      timeframeLower.indexOf('as soon as possible') !== -1
+    ) {
+
+      if (
+        urgentMatches.indexOf(
+          'as soon as possible'
+        ) === -1
+      ) {
+
+        urgentMatches.push(
+          'as soon as possible'
+        );
+
+      }
+
+    }
+
+
+    if (
+      urgentMatches.length > 0
+    ) {
+
       isUrgent = true;
-    }
 
-    if (
-      isUrgent &&
-      flags.join(' ').indexOf('Urgent Request') === -1
-    ) {
       flags.push(
-        "Urgent Request: 'As soon as possible'"
+        "Urgent Request: '" +
+        urgentMatches.join(', ') +
+        "'"
       );
+
     }
 
-    var isSpam = spamScore >= 50;
 
+    /* ==========================================================================
+     * SPAM THRESHOLD
+     * ======================================================================== */
+
+    /*
+     * Use CONFIG.SPAM_THRESHOLD when configured.
+     *
+     * Default is 50 because:
+     * - Honeypot = 100
+     * - Spam keyword = 30
+     * - Suspicious phone = 30
+     *
+     * This avoids accidentally making every small warning an automatic spam
+     * classification.
+     */
+    var spamThreshold =
+      (
+        typeof CONFIG !== 'undefined' &&
+        Number(CONFIG.SPAM_THRESHOLD) > 0
+      )
+        ? Number(CONFIG.SPAM_THRESHOLD)
+        : 50;
+
+
+    var isSpam =
+      spamScore >= spamThreshold;
+
+
+    /* ==========================================================================
+     * REVIEW STATUS
+     * ======================================================================== */
+
+    /*
+     * Non-spam suspicious activity can still require review.
+     */
     var requiresReview =
       matchesReview ||
-      (spamScore > 0 && !isSpam);
+      (
+        spamScore > 0 &&
+        !isSpam
+      );
+
+
+    /* ==========================================================================
+     * STATUS
+     * ======================================================================== */
+
+    var statusParts = [];
+
+
+    if (requiresReview) {
+
+      statusParts.push(
+        'REVIEW REQUIRED'
+      );
+
+    }
+
+
+    if (isSpam) {
+
+      statusParts.push(
+        'SPAM DETECTED'
+      );
+
+    }
+
+
+    if (isUrgent) {
+
+      statusParts.push(
+        'URGENT'
+      );
+
+    }
+
+
+    var statusLabel =
+      statusParts.length > 0
+        ? statusParts.join(' | ')
+        : 'NEW INQUIRY';
+
+
+    /* ==========================================================================
+     * RESULT
+     * ======================================================================== */
 
     return {
-      spamScore: spamScore,
-      isSpam: isSpam,
-      requiresReview: requiresReview,
-      isReviewRequired: requiresReview,
-      isUrgent: isUrgent,
-      flags: flags,
-      reasons: flags,
-      flagReasons: flags,
+
+      spamScore:
+        spamScore,
+
+      isSpam:
+        isSpam,
+
+      isReviewRequired:
+        requiresReview,
+
+      requiresReview:
+        requiresReview,
+
+      isUrgent:
+        isUrgent,
+
+      flags:
+        flags,
+
+      reasons:
+        flags,
+
+      flagReasons:
+        flags,
+
       statusLabel:
-        isSpam
-          ? "SPAM"
-          : (
-              requiresReview
-                ? "NEEDS REVIEW"
-                : "NEW INQUIRY"
-            )
+        statusLabel,
+
+      category:
+        userType,
+
+      reviewMatches:
+        reviewMatches,
+
+      spamMatches:
+        spamMatches,
+
+      urgentMatches:
+        urgentMatches
+
     };
+
   }
 
+
+  /* ============================================================================
+   * REGEX HELPER
+   * ========================================================================== */
+
+  function escapeRegExp(value) {
+
+    return String(value || '')
+      .replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&'
+      );
+
+  }
+
+
+  /* ============================================================================
+   * PUBLIC API
+   * ========================================================================== */
+
   return {
-    evaluateLead: evaluateLead
+
+    evaluateLead:
+      evaluateLead
+
   };
 
 })();
-
