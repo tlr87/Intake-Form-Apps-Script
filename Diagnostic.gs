@@ -450,3 +450,111 @@ function purgeSubmissionsSheet() {
   );
 
 }
+
+/**
+ * RD3 Tech - Purge and Rebuild Form Responses
+ *
+ * Clears existing response data and rebuilds
+ * the Form Responses header row in the correct order.
+ *
+ * The Google Forms response sheet structure is preserved.
+ */
+function purgeFormResponsesSheet() {
+
+  var SPREADSHEET_ID =
+    '1FNzJIm_njbU9d9Rv_dfJe9ChzG8f6ICJOF6bIAxrLUY';
+
+  var ss =
+    SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  var sheet =
+    ss.getSheetByName('Form Responses');
+
+  if (!sheet) {
+    throw new Error(
+      'Form Responses sheet was not found.'
+    );
+  }
+
+  // ============================================================
+  // CORRECT FIELD ORDER
+  // ============================================================
+
+  var headers = [
+    'Timestamp',
+    'Name',
+    'Email',
+    'Phone',
+    'Address / Location',
+    'Preferred Contact',
+    'Have You Used RD3 Tech Before?',
+    'I am contacting RD3 Tech as',
+    'What sounds like your situation?',
+    "What's happening and what would you like to achieve?",
+    'How Soon Do You Need Help?'
+  ];
+
+  // ============================================================
+  // CLEAR ALL EXISTING CONTENT
+  // ============================================================
+
+  var lastRow =
+    sheet.getLastRow();
+
+  var lastColumn =
+    sheet.getLastColumn();
+
+  if (lastRow > 1 && lastColumn > 0) {
+
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        lastColumn
+      )
+      .clearContent();
+
+  }
+
+  // ============================================================
+  // CLEAR HEADER AREA
+  // ============================================================
+
+  sheet
+    .getRange(
+      1,
+      1,
+      1,
+      Math.max(lastColumn, headers.length)
+    )
+    .clearContent();
+
+  // ============================================================
+  // REBUILD HEADER
+  // ============================================================
+
+  sheet
+    .getRange(
+      1,
+      1,
+      1,
+      headers.length
+    )
+    .setValues([headers]);
+
+  // ============================================================
+  // KEEP HEADER VISIBLE
+  // ============================================================
+
+  sheet.setFrozenRows(1);
+
+  // ============================================================
+  // LOG RESULT
+  // ============================================================
+
+  Logger.log(
+    'Form Responses sheet purged and rebuilt successfully.'
+  );
+
+}
