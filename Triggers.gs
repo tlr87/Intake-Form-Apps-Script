@@ -1,37 +1,4 @@
-/**
- * Handles Google Form response triggers (Spreadsheet & Form triggers)
- */
-function onFormSubmit(e) {
-  try {
-    var data = {};
 
-    if (e && e.namedValues && Object.keys(e.namedValues).length > 0) {
-      // 1. Standard Spreadsheet Trigger
-      data = e.namedValues;
-    } else if (e && e.response) {
-      // 2. Direct Form Trigger
-      var itemResponses = e.response.getItemResponses();
-      for (var i = 0; i < itemResponses.length; i++) {
-        data[itemResponses[i].getItem().getTitle()] = itemResponses[i].getResponse();
-      }
-    } else if (e && e.values && e.range) {
-      // 3. Spreadsheet Trigger missing namedValues
-      var sheet = e.range.getSheet();
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      for (var h = 0; h < headers.length; h++) {
-        if (headers[h]) data[headers[h].toString().trim()] = e.values[h];
-      }
-    } else {
-      // 4. Live Trigger fired with missing payload - Read last row from Sheet as fallback
-      Logger.log("⚠️ Live trigger fired without event object. Fetching latest sheet row...");
-      return processLatestSheetRow();
-    }
-
-    return processSubmission(data);
-  } catch (err) {
-    Logger.log("onFormSubmit Error: " + err.toString());
-  }
-}
 
 /**
  * Fallback function to read the last row directly from the sheet if trigger 'e' object is stripped
